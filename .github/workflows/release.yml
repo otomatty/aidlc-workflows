@@ -55,6 +55,8 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           zip -r "ai-dlc-rules-v${VERSION}.zip" aidlc-rules/
+          # Japanese version: keep the same aidlc-rules/ root as the English zip
+          (cd ja && zip -r "../ai-dlc-rules-ja-v${VERSION}.zip" aidlc-rules/)
 
       - name: Create GitHub Release
         if: steps.version.outputs.skip != 'true'
@@ -70,7 +72,9 @@ jobs:
             
             ## Downloads
             - **ai-dlc-rules** - Rules format (Amazon Q, Kiro, etc.)
+            - **ai-dlc-rules-ja** - 日本語版ルール (Japanese translation)
           files: |
             ai-dlc-rules-v${{ steps.version.outputs.version }}.zip
+            ai-dlc-rules-ja-v${{ steps.version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
