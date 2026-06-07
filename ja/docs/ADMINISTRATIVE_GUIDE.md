@@ -123,7 +123,7 @@ flowchart TD
 flowchart LR
     A["git push main"] --> B{{"Manual approval\n(codebuild environment)"}}
     C["workflow_dispatch\n(no tag input)"] --> B
-    D["pull_request\n(aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
+    D["pull_request\n(aidlc-rules/** or ja/aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
     E -->|yes| F["label-cleanup\n(remove reminder comment)"]
     F --> B
     E -->|no| I["label-reminder\n(warning + PR comment)"]
@@ -250,7 +250,7 @@ flowchart TD
 
 **目的:** AWS CodeBuild プロジェクトを実行し、S3 からプライマリおよびセカンダリ成果物をダウンロードし、GitHub Actions キャッシュに保存し、ワークフロー成果物としてアップロードし、`v*` タグからトリガーされた場合は GitHub Release に添付します。
 
-**PR ラベルゲート:** `pull_request` イベントでは、`aidlc-rules/**` 配下のファイルが変更された場合（`paths` フィルター経由）にのみワークフローが実行され、`build` ジョブは PR に `rules` ラベルが存在する場合（`contains(github.event.pull_request.labels.*.name, 'rules')` 経由）にのみ実行されます。`rules` ラベルは `pull-request-lint.yml` の `auto-label` ジョブによって自動的に適用されます（[プルリクエスト検証ワークフロー](#プルリクエスト検証ワークフロー-pull-request-lintyml)を参照）。トリガーには `types: [opened, synchronize, reopened, labeled]` が含まれているため、ラベル付き PR への後続のプッシュで自動的にビルドが再トリガーされます。`push`、`workflow_dispatch`、タグイベントはラベルチェックを完全にバイパスします。
+**PR ラベルゲート:** `pull_request` イベントでは、`aidlc-rules/**` または `ja/aidlc-rules/**` 配下のファイルが変更された場合（`paths` フィルター経由）にのみワークフローが実行され、`build` ジョブは PR に `rules` ラベルが存在する場合（`contains(github.event.pull_request.labels.*.name, 'rules')` 経由）にのみ実行されます。`rules` ラベルは `pull-request-lint.yml` の `auto-label` ジョブによって自動的に適用されます（[プルリクエスト検証ワークフロー](#プルリクエスト検証ワークフロー-pull-request-lintyml)を参照）。トリガーには `types: [opened, synchronize, reopened, labeled]` が含まれているため、ラベル付き PR への後続のプッシュで自動的にビルドが再トリガーされます。`push`、`workflow_dispatch`、タグイベントはラベルチェックを完全にバイパスします。
 
 **ジョブ: `label-reminder`**（PR のみ、`rules` ラベルなし）
 
@@ -259,7 +259,7 @@ flowchart TD
 | 1        | rules ラベルの欠如について警告   | Actions のサマリーに表示される `::warning::` アノテーションを出力する                        |
 | 2        | PR へのコメント                  | 一度だけ PR コメントを投稿する（冪等 — リマインダーコメントがすでに存在する場合はスキップ）  |
 
-このジョブは、`aidlc-rules/**` が変更されたが `rules` ラベルが付いていない `pull_request` イベントでのみ実行されます。評価パイプラインがトリガーされなかったことをメンテナーやレビュワーに警告します。コメントは HTML コメントマーカー（`<!-- rules-label-reminder -->`）を使って PR ごとに 1 回のみ投稿され、重複を防ぎます。通常の運用では、`pull-request-lint.yml` の `auto-label` ジョブが `rules` ラベルを自動的に適用するため、このジョブはフォールバックの安全ネットとして機能します。
+このジョブは、`aidlc-rules/**` または `ja/aidlc-rules/**` が変更されたが `rules` ラベルが付いていない `pull_request` イベントでのみ実行されます。評価パイプラインがトリガーされなかったことをメンテナーやレビュワーに警告します。コメントは HTML コメントマーカー（`<!-- rules-label-reminder -->`）を使って PR ごとに 1 回のみ投稿され、重複を防ぎます。通常の運用では、`pull-request-lint.yml` の `auto-label` ジョブが `rules` ラベルを自動的に適用するため、このジョブはフォールバックの安全ネットとして機能します。
 
 **ジョブ: `label-cleanup`**（PR のみ、`rules` ラベルあり）
 
