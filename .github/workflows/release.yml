@@ -55,7 +55,10 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           zip -r "ai-dlc-rules-v${VERSION}.zip" aidlc-rules/
-          # Japanese version: keep the same aidlc-rules/ root as the English zip
+          # Japanese version: keep the same aidlc-rules/ root as the English zip,
+          # and include the same VERSION marker so the installed Japanese rules
+          # carry an in-tree release identifier like the English archive.
+          cp aidlc-rules/VERSION ja/aidlc-rules/VERSION
           (cd ja && zip -r "../ai-dlc-rules-ja-v${VERSION}.zip" aidlc-rules/)
 
       - name: Create GitHub Release

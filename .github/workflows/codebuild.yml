@@ -14,6 +14,7 @@ on:
       - unlabeled
     paths:
       - 'aidlc-rules/**'
+      - 'ja/aidlc-rules/**'
   push:
     branches:
       - main
