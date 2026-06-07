@@ -14,24 +14,24 @@
 
 ## 目次
 
-- [リポジトリの概要](#repository-overview)
-- [CI/CD アーキテクチャ](#cicd-architecture)
-- [ワークフローリファレンス](#workflow-reference)
-  - [リリース PR ワークフロー](#release-pr-workflow-release-pryml)
-  - [タグリリースワークフロー](#tag-release-workflow-tag-on-mergeyml)
-  - [CodeBuild ワークフロー](#codebuild-workflow-codebuildyml)
-  - [リリースワークフロー](#release-workflow-releaseyml)
-  - [プルリクエスト検証ワークフロー](#pull-request-validation-workflow-pull-request-lintyml)
-  - [セキュリティスキャナーワークフロー](#security-scanners-workflow-security-scannersyml)
-- [保護された環境](#protected-environments)
-- [シークレットと変数](#secrets-and-variables)
-- [権限モデル](#permissions-model)
-- [セキュリティ態勢](#security-posture)
-  - [セキュリティ検出事項の要件](#security-finding-requirements)
-- [コードオーナーシップ](#code-ownership)
-- [リリースプロセス](#release-process)
-- [変更ログの設定](#changelog-configuration)
-- [固定バージョンの更新](#updating-pinned-versions)
+- [リポジトリの概要](#リポジトリの概要)
+- [CI/CD アーキテクチャ](#cicd-アーキテクチャ)
+- [ワークフローリファレンス](#ワークフローリファレンス)
+  - [リリース PR ワークフロー](#リリース-pr-ワークフロー-release-pryml)
+  - [タグリリースワークフロー](#タグリリースワークフロー-tag-on-mergeyml)
+  - [CodeBuild ワークフロー](#codebuild-ワークフロー-codebuildyml)
+  - [リリースワークフロー](#リリースワークフロー-releaseyml)
+  - [プルリクエスト検証ワークフロー](#プルリクエスト検証ワークフロー-pull-request-lintyml)
+  - [セキュリティスキャナーワークフロー](#セキュリティスキャナーワークフロー-security-scannersyml)
+- [保護された環境](#保護された環境)
+- [シークレットと変数](#シークレットと変数)
+- [権限モデル](#権限モデル)
+- [セキュリティ態勢](#セキュリティ態勢)
+  - [セキュリティ検出事項の要件](#セキュリティ検出事項の要件)
+- [コードオーナーシップ](#コードオーナーシップ)
+- [リリースプロセス](#リリースプロセス)
+- [変更ログの設定](#変更ログの設定)
+- [固定バージョンの更新](#固定バージョンの更新)
 
 ---
 
@@ -123,7 +123,7 @@ flowchart TD
 flowchart LR
     A["git push main"] --> B{{"Manual approval\n(codebuild environment)"}}
     C["workflow_dispatch\n(no tag input)"] --> B
-    D["pull_request\n(aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
+    D["pull_request\n(aidlc-rules/** or ja/aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
     E -->|yes| F["label-cleanup\n(remove reminder comment)"]
     F --> B
     E -->|no| I["label-reminder\n(warning + PR comment)"]
@@ -155,7 +155,7 @@ flowchart TD
     M --> O["Upload text log\n(artifact only)"]
 ```
 
-6 つのスキャナーのジョブはすべて並列で実行されます。ClamAV を除く各スキャナーは SARIF レポートを生成し、GitHub Code Scanning（Security タブ）とダウンロード可能なワークフロー成果物の両方にアップロードします。すべてのスキャナーは**遅延失敗パターン**を使用しており、スキャンが完了するまで実行され、結果が常にアップロードされた後に、設定されたしきい値を超える検出があった場合にのみジョブが失敗します。詳細は [セキュリティスキャナーワークフロー](#security-scanners-workflow-security-scannersyml) のリファレンスを参照してください。
+6 つのスキャナーのジョブはすべて並列で実行されます。ClamAV を除く各スキャナーは SARIF レポートを生成し、GitHub Code Scanning（Security タブ）とダウンロード可能なワークフロー成果物の両方にアップロードします。すべてのスキャナーは**遅延失敗パターン**を使用しており、スキャンが完了するまで実行され、結果が常にアップロードされた後に、設定されたしきい値を超える検出があった場合にのみジョブが失敗します。詳細は [セキュリティスキャナーワークフロー](#セキュリティスキャナーワークフロー-security-scannersyml) のリファレンスを参照してください。
 
 ### パイプライン 4: プルリクエスト検証
 
@@ -250,7 +250,7 @@ flowchart TD
 
 **目的:** AWS CodeBuild プロジェクトを実行し、S3 からプライマリおよびセカンダリ成果物をダウンロードし、GitHub Actions キャッシュに保存し、ワークフロー成果物としてアップロードし、`v*` タグからトリガーされた場合は GitHub Release に添付します。
 
-**PR ラベルゲート:** `pull_request` イベントでは、`aidlc-rules/**` 配下のファイルが変更された場合（`paths` フィルター経由）にのみワークフローが実行され、`build` ジョブは PR に `rules` ラベルが存在する場合（`contains(github.event.pull_request.labels.*.name, 'rules')` 経由）にのみ実行されます。`rules` ラベルは `pull-request-lint.yml` の `auto-label` ジョブによって自動的に適用されます（[プルリクエスト検証ワークフロー](#pull-request-validation-workflow-pull-request-lintyml)を参照）。トリガーには `types: [opened, synchronize, reopened, labeled]` が含まれているため、ラベル付き PR への後続のプッシュで自動的にビルドが再トリガーされます。`push`、`workflow_dispatch`、タグイベントはラベルチェックを完全にバイパスします。
+**PR ラベルゲート:** `pull_request` イベントでは、`aidlc-rules/**` または `ja/aidlc-rules/**` 配下のファイルが変更された場合（`paths` フィルター経由）にのみワークフローが実行され、`build` ジョブは PR に `rules` ラベルが存在する場合（`contains(github.event.pull_request.labels.*.name, 'rules')` 経由）にのみ実行されます。`rules` ラベルは `pull-request-lint.yml` の `auto-label` ジョブによって自動的に適用されます（[プルリクエスト検証ワークフロー](#プルリクエスト検証ワークフロー-pull-request-lintyml)を参照）。トリガーには `types: [opened, synchronize, reopened, labeled]` が含まれているため、ラベル付き PR への後続のプッシュで自動的にビルドが再トリガーされます。`push`、`workflow_dispatch`、タグイベントはラベルチェックを完全にバイパスします。
 
 **ジョブ: `label-reminder`**（PR のみ、`rules` ラベルなし）
 
@@ -259,7 +259,7 @@ flowchart TD
 | 1        | rules ラベルの欠如について警告   | Actions のサマリーに表示される `::warning::` アノテーションを出力する                        |
 | 2        | PR へのコメント                  | 一度だけ PR コメントを投稿する（冪等 — リマインダーコメントがすでに存在する場合はスキップ）  |
 
-このジョブは、`aidlc-rules/**` が変更されたが `rules` ラベルが付いていない `pull_request` イベントでのみ実行されます。評価パイプラインがトリガーされなかったことをメンテナーやレビュワーに警告します。コメントは HTML コメントマーカー（`<!-- rules-label-reminder -->`）を使って PR ごとに 1 回のみ投稿され、重複を防ぎます。通常の運用では、`pull-request-lint.yml` の `auto-label` ジョブが `rules` ラベルを自動的に適用するため、このジョブはフォールバックの安全ネットとして機能します。
+このジョブは、`aidlc-rules/**` または `ja/aidlc-rules/**` が変更されたが `rules` ラベルが付いていない `pull_request` イベントでのみ実行されます。評価パイプラインがトリガーされなかったことをメンテナーやレビュワーに警告します。コメントは HTML コメントマーカー（`<!-- rules-label-reminder -->`）を使って PR ごとに 1 回のみ投稿され、重複を防ぎます。通常の運用では、`pull-request-lint.yml` の `auto-label` ジョブが `rules` ラベルを自動的に適用するため、このジョブはフォールバックの安全ネットとして機能します。
 
 **ジョブ: `label-cleanup`**（PR のみ、`rules` ラベルあり）
 
@@ -424,7 +424,7 @@ flowchart TD
 | **ランナー**  | `ubuntu-latest`                                                                                |
 | **同時実行**  | `{workflow}-{event_name}-{ref}` でグループ化、進行中の実行をキャンセル                         |
 
-**目的:** 6 つの独立したセキュリティスキャナーを並列実行して、シークレット、脆弱性、設定ミス、マルウェアを検出します。すべての HIGH および CRITICAL の検出事項は、`main` へのマージ前に修正されるか、文書化されたリスク受容が必要です（[セキュリティ検出事項の要件](#security-finding-requirements)を参照）。
+**目的:** 6 つの独立したセキュリティスキャナーを並列実行して、シークレット、脆弱性、設定ミス、マルウェアを検出します。すべての HIGH および CRITICAL の検出事項は、`main` へのマージ前に修正されるか、文書化されたリスク受容が必要です（[セキュリティ検出事項の要件](#セキュリティ検出事項の要件)を参照）。
 
 **権限モデル:** ワークフローレベルで deny-all を設定し、各ジョブに `actions: read`、`contents: read`、`security-events: write` のみを付与します。
 
@@ -452,7 +452,7 @@ flowchart TD
 | `.grype.yaml`               | Grype の重大度しきい値と CVE 無視リスト              |
 | `.checkov.yaml`             | Checkov のフレームワークとスキップするチェック        |
 
-**バージョン固定:** ワークフローファイル内のすべてのスキャナーツールのバージョンと GitHub Actions は、再現可能なビルドを保証しサプライチェーン攻撃を防ぐために特定のバージョンまたはコミット SHA に固定されています。これらの固定は少なくとも四半期ごとに確認して更新する必要があります。更新手順については [固定バージョンの更新](#updating-pinned-versions) を参照してください。
+**バージョン固定:** ワークフローファイル内のすべてのスキャナーツールのバージョンと GitHub Actions は、再現可能なビルドを保証しサプライチェーン攻撃を防ぐために特定のバージョンまたはコミット SHA に固定されています。これらの固定は少なくとも四半期ごとに確認して更新する必要があります。更新手順については [固定バージョンの更新](#固定バージョンの更新) を参照してください。
 
 詳細な修正方法と抑制手順については、[開発者ガイド — セキュリティスキャナー](DEVELOPERS_GUIDE.md#security-scanners) を参照してください。
 

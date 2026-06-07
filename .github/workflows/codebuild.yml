@@ -14,6 +14,7 @@ on:
       - unlabeled
     paths:
       - 'aidlc-rules/**'
+      - 'ja/aidlc-rules/**'
   push:
     branches:
       - main
@@ -44,7 +45,7 @@ jobs:
     steps:
       - name: Warn about missing rules label
         run: |
-          echo "::warning::This PR changes aidlc-rules/ but does not have the 'rules' label. Add the label to trigger the CodeBuild evaluation pipeline."
+          echo "::warning::This PR changes aidlc-rules/ or ja/aidlc-rules/ but does not have the 'rules' label. Add the label to trigger the CodeBuild evaluation pipeline."
 
       - name: Comment on PR
         if: github.event.pull_request.head.repo.full_name == github.repository
@@ -62,7 +63,7 @@ jobs:
             exit 0
           fi
           BODY="<!-- $MARKER -->
-          > **Note:** This PR changes \`aidlc-rules/\` but the \`rules\` label has not been applied.
+          > **Note:** This PR changes \`aidlc-rules/\` or \`ja/aidlc-rules/\` but the \`rules\` label has not been applied.
           >
           > A maintainer must add the **rules** label to trigger the CodeBuild evaluation pipeline.
           > Once labeled, subsequent pushes will re-trigger the build automatically."
@@ -258,10 +259,34 @@ jobs:
                       --gate \
                       $LOCAL_BUNDLE_ARG
 
+                    # Japanese rules evaluation
+                    # Exercises ja/aidlc-rules so broken or malformed Japanese
+                    # prompts fail the build before they are packaged into a
+                    # release (release.yml ships ai-dlc-rules-ja-vX.X.X.zip).
+                    # Runs after the trend report so the English run above is the
+                    # one feeding the (English-baselined) trend gate; this step
+                    # gates on the Japanese workflow executing successfully.
+                    echo "========================================"
+                    echo "  Japanese Evaluation (rules-subdir=ja/aidlc-rules, rules-ref=$RULES_REF)"
+                    echo "========================================"
+                    # Capture the exit code so artifacts are still collected
+                    # below; the build is failed explicitly at the end if the
+                    # Japanese rules could not drive the workflow. Without this,
+                    # the trailing mkdir/cp/cd would mask a non-zero exit and
+                    # broken ja/aidlc-rules prompts could be packaged/released.
+                    JA_EVAL_RC=0
+                    uv run python run.py full --rules-ref "$RULES_REF" --rules-subdir ja/aidlc-rules || JA_EVAL_RC=$?
+
                     # Collect artifacts
                     mkdir -p "$CODEBUILD_SRC_DIR/.codebuild/regression-runs"
                     cp -r "$EVALUATOR_DIR/runs/"*/* "$CODEBUILD_SRC_DIR/.codebuild/regression-runs/" 2>/dev/null || true
                     cd "$CODEBUILD_SRC_DIR"
+
+                    # Fail the build if the Japanese evaluation did not succeed.
+                    if [ "$JA_EVAL_RC" -ne 0 ]; then
+                      echo "::error::Japanese rules evaluation failed (exit $JA_EVAL_RC)"
+                      exit "$JA_EVAL_RC"
+                    fi
               post_build:
                 commands:
                   - echo "Build completed with status $CODEBUILD_BUILD_SUCCEEDING"

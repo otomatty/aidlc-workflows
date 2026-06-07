@@ -1,0 +1,38 @@
+# markdownlint overrides for ja/aidlc-rules/ (Japanese LLM prompt files)
+# Mirrors aidlc-rules/.markdownlint-cli2.yaml so the translated rule files use
+# the same relaxed rule set as the English originals (rules temporarily
+# disabled pending incremental remediation — see PR #159), plus one
+# Japanese-specific override (MD053) explained below.
+
+config:
+  # --- Tier 1: Zero prompt impact (invisible whitespace) ---
+  MD009: false  # no-trailing-spaces (9 violations)
+  MD012: false  # no-multiple-blanks (2 violations)
+  MD047: false  # single-trailing-newline (4 violations)
+
+  # --- Tier 2: Zero prompt impact (formatting normalization) ---
+  MD029: false  # ol-prefix (1 violation)
+  MD026: false  # no-trailing-punctuation (17 violations)
+
+  # --- Tier 3: Zero prompt impact (blank line structure) ---
+  MD022: false  # blanks-around-headings (274 violations)
+  MD032: false  # blanks-around-lists (426 violations)
+  MD031: false  # blanks-around-fences (31 violations)
+
+  # --- Tier 4: Minimal prompt impact (table/URL formatting) ---
+  MD060: false  # table-column-style (34 violations)
+
+  # --- Tier 5: Low prompt impact (structural cosmetic) ---
+  MD046: false  # code-block-style (8 violations)
+  MD007: false  # ul-indent (34 violations)
+
+  # --- Tier 6: Needs review (adds content or changes structure) ---
+  MD040: false  # fenced-code-language (18 violations)
+  MD025: false  # single-title (13 violations)
+
+  # --- Japanese-specific ---
+  # MD053: the "[Answer]:" instruction lines are followed by space-free CJK
+  # text, so micromark parses them as link reference definitions (unlike the
+  # English rules, where the following text contains spaces and stays literal).
+  # Disabling prevents the auto-fixer from deleting these prompt lines.
+  MD053: false  # link-image-reference-definitions

@@ -71,6 +71,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git ref (branch/tag/commit) for AIDLC rules repo.",
     )
     parser.add_argument(
+        "--rules-subdir",
+        default=None,
+        help=(
+            "Subdirectory within the rules source to evaluate "
+            "(default: aidlc-rules; use ja/aidlc-rules for the Japanese rules)."
+        ),
+    )
+    parser.add_argument(
         "--no-exec",
         action="store_true",
         default=False,
@@ -112,6 +120,9 @@ def _build_cli_overrides(args: argparse.Namespace) -> dict:
 
     if args.rules_ref is not None:
         overrides.setdefault("aidlc", {})["rules_ref"] = args.rules_ref
+
+    if args.rules_subdir is not None:
+        overrides.setdefault("aidlc", {})["rules_subdir"] = args.rules_subdir
 
     if args.no_exec:
         overrides.setdefault("execution", {})["enabled"] = False

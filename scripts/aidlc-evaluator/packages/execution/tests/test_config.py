@@ -99,3 +99,12 @@ class TestLoadConfig:
         config = load_config(cli_overrides=overrides)
         assert config.aidlc.rules_source == "local"
         assert config.aidlc.rules_local_path == "/some/path"
+
+    def test_rules_subdir_default(self):
+        config = RunnerConfig()
+        assert config.aidlc.rules_subdir == "aidlc-rules"
+
+    def test_rules_subdir_override(self):
+        overrides = {"aidlc": {"rules_subdir": "ja/aidlc-rules"}}
+        config = load_config(cli_overrides=overrides)
+        assert config.aidlc.rules_subdir == "ja/aidlc-rules"

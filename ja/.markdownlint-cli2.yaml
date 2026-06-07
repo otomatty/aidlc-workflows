@@ -1,0 +1,13 @@
+# markdownlint overrides for the Japanese tree (ja/README.md, ja/docs/**)
+# Merged on top of the repository-root .markdownlint-cli2.yaml.
+#
+# Note: ja/aidlc-rules/ has its own (more permissive) config that takes
+# precedence for the translated rule files.
+
+config:
+  # MD060 (table-column-style: "aligned") requires table pipes to line up by
+  # character count. Japanese text mixes full-width (display-width 2, count 1)
+  # and half-width characters, so "aligned" tables are impractical to maintain
+  # and the rule has no auto-fixer. GitHub renders the tables correctly
+  # regardless of pipe alignment. The English docs keep MD060 enabled.
+  MD060: false  # table-column-style

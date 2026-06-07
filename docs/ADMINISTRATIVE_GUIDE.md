@@ -123,7 +123,7 @@ The release flow is **changelog-first**: the CHANGELOG is updated *before* the t
 flowchart LR
     A["git push main"] --> B{{"Manual approval\n(codebuild environment)"}}
     C["workflow_dispatch\n(no tag input)"] --> B
-    D["pull_request\n(aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
+    D["pull_request\n(aidlc-rules/** or ja/aidlc-rules/** changed)"] --> E{"rules\nlabel?"}
     E -->|yes| F["label-cleanup\n(remove reminder comment)"]
     F --> B
     E -->|no| I["label-reminder\n(warning + PR comment)"]
@@ -250,7 +250,7 @@ flowchart TD
 
 **Purpose:** Runs an AWS CodeBuild project, downloads primary and secondary artifacts from S3, caches them in GitHub Actions cache, uploads them as workflow artifacts, and (when triggered from a `v*` tag) attaches them to the GitHub Release.
 
-**PR label gate:** For `pull_request` events, the workflow only fires when files under `aidlc-rules/**` are changed (via `paths` filter) and the `build` job only runs when the `rules` label is present on the PR (via `contains(github.event.pull_request.labels.*.name, 'rules')`). The `rules` label is applied automatically by the `auto-label` job in `pull-request-lint.yml` (see [Pull Request Validation Workflow](#pull-request-validation-workflow-pull-request-lintyml)). The trigger includes `types: [opened, synchronize, reopened, labeled]` so that subsequent pushes to a labeled PR re-trigger the build automatically. `push`, `workflow_dispatch`, and tag events bypass the label check entirely.
+**PR label gate:** For `pull_request` events, the workflow only fires when files under `aidlc-rules/**` or `ja/aidlc-rules/**` are changed (via `paths` filter) and the `build` job only runs when the `rules` label is present on the PR (via `contains(github.event.pull_request.labels.*.name, 'rules')`). The `rules` label is applied automatically by the `auto-label` job in `pull-request-lint.yml` (see [Pull Request Validation Workflow](#pull-request-validation-workflow-pull-request-lintyml)). The trigger includes `types: [opened, synchronize, reopened, labeled]` so that subsequent pushes to a labeled PR re-trigger the build automatically. `push`, `workflow_dispatch`, and tag events bypass the label check entirely.
 
 **Job: `label-reminder`** (PR only, no `rules` label)
 
@@ -259,7 +259,7 @@ flowchart TD
 | 1    | Warn about missing rules label   | Emits a `::warning::` annotation visible in the Actions summary                              |
 | 2    | Comment on PR                    | Posts a one-time PR comment (idempotent — skips if the reminder comment already exists)      |
 
-This job runs only for `pull_request` events where `aidlc-rules/**` changed but the `rules` label is absent. It alerts maintainers and reviewers that the evaluation pipeline was not triggered. The comment is posted once per PR using an HTML comment marker (`<!-- rules-label-reminder -->`) to avoid duplicates. In normal operation, the `auto-label` job in `pull-request-lint.yml` applies the `rules` label automatically, so this job serves as a fallback safety net.
+This job runs only for `pull_request` events where `aidlc-rules/**` or `ja/aidlc-rules/**` changed but the `rules` label is absent. It alerts maintainers and reviewers that the evaluation pipeline was not triggered. The comment is posted once per PR using an HTML comment marker (`<!-- rules-label-reminder -->`) to avoid duplicates. In normal operation, the `auto-label` job in `pull-request-lint.yml` applies the `rules` label automatically, so this job serves as a fallback safety net.
 
 **Job: `label-cleanup`** (PR only, `rules` label present)
 

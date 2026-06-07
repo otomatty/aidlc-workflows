@@ -198,6 +198,7 @@ def _save_evaluation_config(
             "scorer_model": args.scorer_model,
             "executor_model": args.executor_model,
             "rules_ref": args.rules_ref,
+            "rules_subdir": args.rules_subdir,
             "output_dir": _rel(args.output_dir),
             "sandbox": args.sandbox,
             "report_format": args.report_format,
@@ -326,6 +327,8 @@ def stage_execute(args: argparse.Namespace) -> Path | None:
         cmd += ["--executor-model", args.executor_model]
     if args.rules_ref:
         cmd += ["--rules-ref", args.rules_ref]
+    if args.rules_subdir:
+        cmd += ["--rules-subdir", args.rules_subdir]
     # Route output under runs/<scenario>/ by default
     output_dir = args.output_dir
     if not output_dir and hasattr(args, "_scenario_name"):
@@ -651,6 +654,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--rules-ref", default=None,
         help="Git ref (branch/tag/commit) for AIDLC rules (overrides config value)",
+    )
+    parser.add_argument(
+        "--rules-subdir", default=None,
+        help=(
+            "Subdirectory within the rules source to evaluate "
+            "(default: aidlc-rules; use ja/aidlc-rules for the Japanese rules)"
+        ),
     )
     parser.add_argument(
         "--executor-model", default=None,

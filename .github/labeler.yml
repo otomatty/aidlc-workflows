@@ -3,13 +3,16 @@
 
 rules:
 - changed-files:
-  - any-glob-to-any-file: 'aidlc-rules/**'
+  - any-glob-to-any-file:
+    - 'aidlc-rules/**'
+    - 'ja/aidlc-rules/**'
 
 documentation:
 - changed-files:
   - all-globs-to-any-file:
     - '**/*.md'
     - '!aidlc-rules/**'
+    - '!ja/aidlc-rules/**'
 
 github:
 - changed-files:
