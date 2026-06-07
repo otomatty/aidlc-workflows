@@ -35,6 +35,10 @@ class AidlcConfig:
     rules_repo: str = "https://github.com/awslabs/aidlc-workflows.git"
     rules_local_path: str | None = None
     rules_ref: str = "main"
+    # Subdirectory within the rules source that holds the rules to evaluate.
+    # Defaults to the English "aidlc-rules"; set to "ja/aidlc-rules" to
+    # evaluate the Japanese translation.
+    rules_subdir: str = "aidlc-rules"
 
 
 @dataclass

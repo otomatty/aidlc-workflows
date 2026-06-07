@@ -86,12 +86,13 @@ def setup_rules(run_folder: Path, config: RunnerConfig) -> Path:
         Path to the aidlc-rules directory within the run folder.
     """
     rules_dest = run_folder / "aidlc-rules"
+    rules_subdir = config.aidlc.rules_subdir or "aidlc-rules"
 
     if config.aidlc.rules_source == "local" and config.aidlc.rules_local_path:
         local_path = Path(config.aidlc.rules_local_path)
         if not local_path.exists():
             raise FileNotFoundError(f"Local rules path not found: {local_path}")
-        shutil.copytree(local_path / "aidlc-rules", rules_dest)
+        shutil.copytree(local_path / rules_subdir, rules_dest)
     else:
         # Git clone
         try:
@@ -111,7 +112,7 @@ def setup_rules(run_folder: Path, config: RunnerConfig) -> Path:
         if result.returncode != 0:
             raise RuntimeError(f"Failed to clone AIDLC rules repo:\n{result.stderr}")
         # Move aidlc-rules content up
-        repo_rules = rules_dest / "_repo" / "aidlc-rules"
+        repo_rules = rules_dest / "_repo" / rules_subdir
         if repo_rules.exists():
             for item in repo_rules.iterdir():
                 shutil.move(str(item), str(rules_dest / item.name))
@@ -159,6 +160,7 @@ def write_run_meta(
             "rules_source": config.aidlc.rules_source,
             "rules_ref": config.aidlc.rules_ref,
             "rules_repo": config.aidlc.rules_repo,
+            "rules_subdir": config.aidlc.rules_subdir,
             "execution_enabled": config.execution.enabled,
             "command_timeout": config.execution.command_timeout,
             "post_run_tests": config.execution.post_run_tests,
