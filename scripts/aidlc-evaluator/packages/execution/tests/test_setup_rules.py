@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from aidlc_runner.config import RunnerConfig
 from aidlc_runner.runner import setup_rules
 
@@ -54,3 +56,32 @@ def test_setup_rules_local_selects_japanese_subdir(tmp_path: Path):
         encoding="utf-8"
     )
     assert content == "日本語ルール\n"
+
+
+@pytest.mark.parametrize("bad_subdir", ["../escape", "/abs/aidlc-rules", "a/../../b"])
+def test_setup_rules_rejects_unsafe_subdir(tmp_path: Path, bad_subdir: str):
+    source = _make_local_source(tmp_path / "src")
+    run_folder = tmp_path / "run"
+    run_folder.mkdir()
+
+    config = RunnerConfig()
+    config.aidlc.rules_source = "local"
+    config.aidlc.rules_local_path = str(source)
+    config.aidlc.rules_subdir = bad_subdir
+
+    with pytest.raises(ValueError):
+        setup_rules(run_folder, config)
+
+
+def test_setup_rules_missing_subdir_raises(tmp_path: Path):
+    source = _make_local_source(tmp_path / "src")
+    run_folder = tmp_path / "run"
+    run_folder.mkdir()
+
+    config = RunnerConfig()
+    config.aidlc.rules_source = "local"
+    config.aidlc.rules_local_path = str(source)
+    config.aidlc.rules_subdir = "does/not/exist"
+
+    with pytest.raises(FileNotFoundError):
+        setup_rules(run_folder, config)

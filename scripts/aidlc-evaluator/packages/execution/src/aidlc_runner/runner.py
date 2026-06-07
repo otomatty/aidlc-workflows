@@ -86,13 +86,24 @@ def setup_rules(run_folder: Path, config: RunnerConfig) -> Path:
         Path to the aidlc-rules directory within the run folder.
     """
     rules_dest = run_folder / "aidlc-rules"
-    rules_subdir = config.aidlc.rules_subdir or "aidlc-rules"
+    raw_subdir = config.aidlc.rules_subdir or "aidlc-rules"
+    # rules_subdir is operator-supplied (config / --rules-subdir). Keep it a
+    # relative path inside the rules source so it cannot escape via an absolute
+    # path or ".." segments.
+    rules_subdir = Path(raw_subdir)
+    if rules_subdir.is_absolute() or ".." in rules_subdir.parts:
+        raise ValueError(
+            f"Invalid rules_subdir (must be a relative path without '..'): {raw_subdir!r}"
+        )
 
     if config.aidlc.rules_source == "local" and config.aidlc.rules_local_path:
         local_path = Path(config.aidlc.rules_local_path)
         if not local_path.exists():
             raise FileNotFoundError(f"Local rules path not found: {local_path}")
-        shutil.copytree(local_path / rules_subdir, rules_dest)
+        src_rules = local_path / rules_subdir
+        if not src_rules.is_dir():
+            raise FileNotFoundError(f"Rules subdirectory not found: {src_rules}")
+        shutil.copytree(src_rules, rules_dest)
     else:
         # Git clone
         try:
@@ -111,11 +122,16 @@ def setup_rules(run_folder: Path, config: RunnerConfig) -> Path:
             )
         if result.returncode != 0:
             raise RuntimeError(f"Failed to clone AIDLC rules repo:\n{result.stderr}")
-        # Move aidlc-rules content up
+        # Move aidlc-rules content up. Fail fast if the requested subdirectory
+        # is absent in the clone rather than silently returning empty rules.
         repo_rules = rules_dest / "_repo" / rules_subdir
-        if repo_rules.exists():
-            for item in repo_rules.iterdir():
-                shutil.move(str(item), str(rules_dest / item.name))
+        if not repo_rules.is_dir():
+            raise RuntimeError(
+                f"Rules subdirectory '{raw_subdir}' not found in cloned repo "
+                f"(ref: {config.aidlc.rules_ref})"
+            )
+        for item in repo_rules.iterdir():
+            shutil.move(str(item), str(rules_dest / item.name))
         # Clean up the full repo clone (force-remove read-only git pack files on Windows)
         def _force_remove_readonly(func, path, _exc_info):
             os.chmod(path, stat.S_IWRITE)
