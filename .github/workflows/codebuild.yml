@@ -269,12 +269,24 @@ jobs:
                     echo "========================================"
                     echo "  Japanese Evaluation (rules-subdir=ja/aidlc-rules, rules-ref=$RULES_REF)"
                     echo "========================================"
-                    uv run python run.py full --rules-ref "$RULES_REF" --rules-subdir ja/aidlc-rules
+                    # Capture the exit code so artifacts are still collected
+                    # below; the build is failed explicitly at the end if the
+                    # Japanese rules could not drive the workflow. Without this,
+                    # the trailing mkdir/cp/cd would mask a non-zero exit and
+                    # broken ja/aidlc-rules prompts could be packaged/released.
+                    JA_EVAL_RC=0
+                    uv run python run.py full --rules-ref "$RULES_REF" --rules-subdir ja/aidlc-rules || JA_EVAL_RC=$?
 
                     # Collect artifacts
                     mkdir -p "$CODEBUILD_SRC_DIR/.codebuild/regression-runs"
                     cp -r "$EVALUATOR_DIR/runs/"*/* "$CODEBUILD_SRC_DIR/.codebuild/regression-runs/" 2>/dev/null || true
                     cd "$CODEBUILD_SRC_DIR"
+
+                    # Fail the build if the Japanese evaluation did not succeed.
+                    if [ "$JA_EVAL_RC" -ne 0 ]; then
+                      echo "::error::Japanese rules evaluation failed (exit $JA_EVAL_RC)"
+                      exit "$JA_EVAL_RC"
+                    fi
               post_build:
                 commands:
                   - echo "Build completed with status $CODEBUILD_BUILD_SUCCEEDING"
