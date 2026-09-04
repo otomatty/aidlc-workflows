@@ -89,7 +89,7 @@ aidlc/knowledge/                  # 初期は空。必要なサブディレク�
 
 ## 文書ナレッジ（DocumentKB）
 
-チームナレッジのファイルは、人が整えた参照です。DocumentKB はその隣にある、チームがすでに持っている文書のカタログです。ビジョン、PRD、要件ブリーフ、ポリシー、契約、PDF、Word、Markdown、プレーンテキスト。ワークフローの入力として使うやり方は [既存文書から始める](02-your-first-workflow.md#starting-from-an-existing-document) です。
+チームナレッジのファイルは、人が整えた参照です。DocumentKB はその隣にある、チームがすでに持っている文書のカタログです。ビジョン、PRD、要件ブリーフ、ポリシー、契約、PDF、Word、Markdown、プレーンテキスト。ワークフローの入力として使うやり方は [既存文書から始める](02-your-first-workflow.md#starting-from-an-existing-document) です。何か、対応形式、活用の仕方は [DocumentKB](documentkb.md) です。
 
 所有の切り分けは意図的です。
 
@@ -104,7 +104,9 @@ aidlc/knowledge/                  # 初期は空。必要なサブディレク�
 
 復旧の範囲は狭くしています。`documentkb/index.json` だけ失ったときは、`sync` が残っている文書ごとの `metadata.json`（tombstone を含む）から作り直します。`documentkb/` ごと消すとそれらの記録も消えるので、文書 ID、tombstone、インテントとの関連は残りません。残った原本は新しい文書として索引されます。
 
-動詞とフラグの一覧は [CLI コマンド](12-cli-commands.md)、スキル面は [スキルとランナー](17-skills.md) です。
+動詞とフラグの一覧は [CLI コマンド](12-cli-commands.md)、スキル面は [スキルとランナー](17-skills.md)、形式と運用は [DocumentKB](documentkb.md) です。
+
+既存コードの理解は DocumentKB ではなく、Reverse Engineering が書くスペース単位の [CodeKB](codekb.md)（`aidlc/spaces/<space>/codekb/<repo>/`）です。人が置く標準でも、索引する文書でもありません。
 
 ---
 

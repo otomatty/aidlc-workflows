@@ -50,7 +50,7 @@ Initialization の 3 ステージは、決定論的なツール呼び出し 1 �
 
 ### ステージ 2.1 — Reverse Engineering
 
-2 段のパイプラインがコードベースを見ます。先に aidlc-developer-agent のコードスキャン、続けて aidlc-architect-agent が合成して成果物を書きます。リポジトリ向けの永続成果物 9 本が `aidlc/spaces/default/codekb/user-service/` に出ます:
+2 段のパイプラインがコードベースを見ます。先に aidlc-developer-agent のコードスキャン、続けて aidlc-architect-agent が合成して成果物を書きます。リポジトリ向けの永続成果物 9 本が `aidlc/spaces/default/codekb/user-service/` に出ます（[Reverse Engineering と CodeKB](codekb.md)）:
 
 | 成果物 | 中身 |
 |--------|------|

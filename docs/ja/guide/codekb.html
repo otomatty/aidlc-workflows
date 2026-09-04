@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CodeKB — AI-DLC User Guide</title>
+<style>
+:root{
+  --ink:#1a1d21; --muted:#5b6470; --line:#dfe3e8; --line-soft:#eef1f4;
+  --accent:#1f6feb; --accent-soft:#eef4ff; --warn-soft:#fff8e6;
+  --code-bg:#f6f7f9;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0 auto; max-width:52rem; padding:3rem 1.5rem 5rem;
+  color:var(--ink); background:#fff;
+  font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Noto Sans JP","Meiryo",system-ui,sans-serif;
+  font-size:15.5px; line-height:1.9; letter-spacing:.01em;
+  font-feature-settings:"palt" 1;
+}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid rgba(31,111,235,.25)}
+a:hover{border-bottom-color:var(--accent)}
+
+.doc-head{border-bottom:3px solid var(--ink); padding-bottom:1.2rem; margin-bottom:2rem}
+.eyebrow{font-size:.75rem; letter-spacing:.16em; color:var(--muted); text-transform:uppercase; margin:0 0 .5rem}
+h1{font-size:2.4rem; line-height:1.3; margin:0 0 .6rem; letter-spacing:.01em}
+.lede{font-size:1.02rem; color:var(--muted); margin:0}
+.crumbs{margin-top:.9rem; font-size:.85rem; color:var(--muted)}
+.crumbs span{margin:0 .45rem; color:var(--line)}
+
+.toc{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:1.1rem 1.4rem; margin:0 0 2.5rem}
+.toc h2{font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 .6rem; border:0; padding:0}
+.toc ol{margin:0; padding-left:1.3rem; font-size:.92rem; line-height:1.8}
+
+h2{font-size:1.45rem; margin:3rem 0 1rem; padding-bottom:.4rem; border-bottom:1px solid var(--line); break-after:avoid}
+h3{font-size:1.08rem; margin:2rem 0 .6rem; break-after:avoid}
+h3 .n{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.4em}
+p{margin:0 0 1rem}
+ul,ol{margin:0 0 1rem; padding-left:1.5rem}
+li{margin:.25rem 0}
+
+.note{border-left:3px solid var(--accent); background:var(--accent-soft); padding:.9rem 1.1rem; border-radius:0 8px 8px 0; margin:1.2rem 0; break-inside:avoid}
+.note.warn{border-left-color:#d19b1d; background:var(--warn-soft)}
+.note p:last-child{margin-bottom:0}
+
+pre{background:var(--code-bg); border:1px solid var(--line); border-radius:8px; padding:1rem 1.1rem; overflow-x:auto; margin:1.2rem 0; break-inside:avoid}
+code{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace; font-size:.86em}
+pre code{line-height:1.65; color:#2b3138}
+:not(pre)>code{background:var(--code-bg); border:1px solid var(--line-soft); border-radius:4px; padding:.08em .38em; color:#b3306b}
+.cmt{color:#7a8592}
+
+.tw{overflow-x:auto; margin:1.4rem 0}
+table{border-collapse:collapse; width:100%; font-size:.9rem; line-height:1.7}
+th,td{border:1px solid var(--line); padding:.55rem .7rem; text-align:left; vertical-align:top}
+thead th{background:#f2f4f7; font-weight:600; white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfc}
+tbody tr{break-inside:avoid}
+td code,th code{white-space:nowrap}
+.yes{color:#1a7f4b; font-weight:600}
+.no{color:#a33; font-weight:600}
+td:first-child{white-space:nowrap}
+table.wrap1 td:not(:first-child){white-space:normal}
+
+ol.steps{counter-reset:s; list-style:none; padding-left:0}
+ol.steps li{counter-increment:s; position:relative; padding-left:2.2rem; margin:.5rem 0}
+ol.steps li::before{content:counter(s); position:absolute; left:0; top:.3rem;
+  width:1.55rem; height:1.55rem; border-radius:50%; background:var(--accent); color:#fff;
+  font-size:.8rem; line-height:1.55rem; text-align:center}
+
+footer{margin-top:3.5rem; padding-top:1rem; border-top:1px solid var(--line); font-size:.82rem; color:var(--muted)}
+
+@page{size:A4; margin:16mm 14mm 18mm}
+@media print{
+  body{max-width:none; padding:0; font-size:10.5pt; line-height:1.8}
+  a{color:var(--ink); border-bottom:0}
+  h1{font-size:22pt}
+  h2{font-size:14pt; margin:1.6rem 0 .7rem}
+  h3{margin:1rem 0 .4rem}
+  p,ul,ol{margin-bottom:.6rem}
+  pre,.tw,.note{margin:.7rem 0}
+  .doc-head{margin-bottom:1.2rem; padding-bottom:.8rem}
+  .toc{margin-bottom:1.4rem}
+  table{font-size:8.8pt}
+  pre{font-size:8.8pt}
+}
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <p class="eyebrow">AI-DLC User Guide</p>
+  <h1>Reverse Engineering と CodeKB</h1>
+  <p class="lede">既存コードを読んで、チームで共有できるコード理解のストアを作る仕組み</p>
+  <p class="crumbs">
+    <a href="../README.md">AI-DLC ドキュメント</a><span>·</span>User Guide<span>·</span>
+    <a href="04-phases-and-stages.md">フェーズとステージ</a><span>·</span><a href="14-artifacts-reference.md">成果物リファレンス</a>
+  </p>
+</header>
+
+<p>Reverse Engineering は、既存コードを読んで <strong>CodeKB</strong>（コード知識ベース）を作るステージです。下流の要件・設計・実装が、いまのコードベースを同じ理解から読めるようにします。</p>
+
+<div class="note">
+  <p>人が Markdown で書く <a href="08-knowledge.md">第2層ナレッジ</a>（「いつもこう作る」）とは別です。既存文書を ID で引用する <a href="documentkb.md">DocumentKB</a> とも別です。</p>
+  <p>外部の CodeKB MCP（任意の構造分析サーバ）とも別です。この章の CodeKB は、フレームワークが書くローカルストア <code>aidlc/spaces/&lt;space&gt;/codekb/</code> です。</p>
+</div>
+
+<nav class="toc">
+  <h2>目次</h2>
+  <ol>
+    <li><a href="#s1">何か</a></li>
+    <li><a href="#s2">どのように進むか</a></li>
+    <li><a href="#s3">いつ走るか</a></li>
+    <li><a href="#s4">人が選ぶこと（再利用と再スキャン）</a></li>
+    <li><a href="#s5">生成される成果物</a></li>
+    <li><a href="#s6">他のナレッジとの使い分け</a></li>
+    <li><a href="#s7">次に読む</a></li>
+  </ol>
+</nav>
+
+<h2 id="s1">何か</h2>
+
+<p>エージェントは、リポジトリを見ただけでは、ドメイン・構成・API・依存をチームで共有できる形にはしません。Reverse Engineering が走って初めて、次が決まります。</p>
+
+<ul>
+  <li>何のシステムか（ビジネス概要、アーキテクチャ）</li>
+  <li>コードがどう分かれているか（構成、コンポーネント、技術スタック）</li>
+  <li>どこまで深く読んだか（鮮度と被覆。次のインテントが再利用できるか）</li>
+</ul>
+
+<p>成果物はインテントのレコードではなく、<strong>スペース共有・リポジトリごと</strong> の店に置きます。同じスペースの後続インテントは、自分のスキャン時点ではなく、そのリポジトリの最新ストアを読みます。</p>
+
+<pre><code>aidlc/spaces/&lt;space&gt;/
+├── codekb/                 <span class="cmt"># Reverse Engineering が書く。手で直さない</span>
+│   └── &lt;repo&gt;/             <span class="cmt"># リポジトリにつき 1 ストア</span>
+│       ├── business-overview.md
+│       ├── architecture.md
+│       ├── code-structure.md
+│       ├── api-documentation.md
+│       ├── component-inventory.md
+│       ├── technology-stack.md
+│       ├── dependencies.md
+│       ├── code-quality-assessment.md
+│       └── reverse-engineering-timestamp.md
+└── intents/&lt;record&gt;/       <span class="cmt"># このステージの日記と、スキャンの手渡しだけ</span></code></pre>
+
+<p><code>&lt;space&gt;</code> は名前付きスペースを使わなければ <code>default</code> です。<code>&lt;repo&gt;</code> はインテント作成時に記録したリポジトリ名です。<code>repos</code> が無い単一リポジトリでは、ワークスペースルートに対して 1 回走ります。</p>
+
+<p><code>codekb/</code> は git に載せます。チームが同じコード理解を共有するための設計です。公開はステージがロック付きで行うので、ファイルを手で置き換えないでください。</p>
+
+<h2 id="s2">どのように進むか</h2>
+
+<p>ステージ番号は <strong>2.1</strong>、実行は <strong>パイプライン</strong>（2 段の鎖）です。コンダクターが順に委譲し、人がスキャン中に割り込む必要はありません。</p>
+
+<ol class="steps">
+  <li><strong>Developer</strong>（<code>aidlc-developer-agent</code>）がコードをスキャンする。パッケージ、ビルド、API、依存、テスト、品質の兆候、技術的負債を、手渡しファイルに書く</li>
+  <li><strong>Architect</strong>（<code>aidlc-architect-agent</code>）がそれを合成し、下の 9 ファイルを書く。<code>architecture.md</code> にはコンポーネント関係の Mermaid と、ビジネストランザクションの相互作用図が入ります</li>
+</ol>
+
+<p>スキャンが終わると承認ゲートが出ます。Approve で Requirements Analysis へ進み、Request Changes で直しを求めます。</p>
+
+<p>複数リポジトリのインテントでは、記録したリポジトリごとにこの鎖が 1 本完走します。ストアはリポジトリごとに独立です。</p>
+
+<h2 id="s3">いつ走るか</h2>
+
+<p>次を満たすと、ワークフローの中でこのステージが計画に入ります。</p>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th>条件</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>プロジェクト種別</td><td><strong>brownfield</strong> だけ。greenfield は Initialization（0.2 の検出）で自動 SKIP</td></tr>
+    <tr><td>スコープ</td><td><code>infra</code> 以外。<code>enterprise</code>、<code>feature</code>、<code>mvp</code>、<code>poc</code>、<code>bugfix</code>、<code>refactor</code>、<code>security-patch</code>、<code>classic</code>、<code>workshop</code>、<code>express</code> に含まれる</td></tr>
+    <tr><td>タイミング</td><td>通常は Ideation の承認ゲートのあと、Inception の先頭。<code>bugfix</code> などは Ideation を飛ばすので、Initialization の直後</td></tr>
+    <tr><td>対象</td><td>インテントの <code>repos</code>。未記録ならワークスペースルート 1 回</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>brownfield</strong> は、ステージ 0.2 がソース、フレームワーク設定、パッケージマニフェスト、<code>src/</code> などのソースディレクトリ、<code>.gitmodules</code> のいずれかを見つけたときです。トップに合図が無いときは、コンテナフォルダを最大 3 段まで見ます。ソースが <code>backend/</code> や <code>services/api/</code> に入っていても brownfield になります。</p>
+
+<p>計画に入っていても、毎回フルスキャンするとは限りません。既存ストアの鮮度を見て、人が次を選びます。</p>
+
+<p>ワークフロー全体を回さず、このステージだけ当てるときは次です。成果物は書き、ワークフローの <code>Current Stage</code> は進みません。</p>
+
+<pre><code>/aidlc --stage reverse-engineering --single</code></pre>
+
+<p>適応型コンポーザーが、外部の構造分析を根拠に SKIP を提案することがあります。黙っては飛ばしません。下流がローカル CodeKB 無しで走ることを開示し、決めるのはゲートの人です。</p>
+
+<h2 id="s4">人が選ぶこと（再利用と再スキャン）</h2>
+
+<p>CodeKB はスペース単位で、インテントをまたいで共有します。再実行の直前に、ストアの <code>reverse-engineering-timestamp.md</code> を見て判定します。</p>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th>判定</th><th>意味</th><th>人が選べること</th></tr></thead>
+  <tbody>
+    <tr><td><code>NO_STORE</code></td><td>そのリポジトリの初回</td><td>質問なしでスキャン</td></tr>
+    <tr><td><code>CURRENT</code>（被覆が足りる）</td><td>分析したパスは、ストアを作ったときから変わっていない</td><td>再利用 / フル再スキャン / 焦点スキャン</td></tr>
+    <tr><td><code>CURRENT</code>（被覆が足りない）</td><td>ストアは新しいが、このインテントの領域を深くは読んでいない</td><td>フル再スキャン / 焦点スキャン</td></tr>
+    <tr><td><code>STALE</code></td><td>分析したパスの中身が変わった</td><td>フル再スキャン / 焦点スキャン</td></tr>
+    <tr><td><code>UNVERIFIED</code></td><td>指紋を計算できない（例: git 作業ツリーではない）</td><td>フル再スキャン / 焦点スキャン</td></tr>
+    <tr><td><code>UNKNOWN_SCOPE</code></td><td>スコープ追跡より前のストア</td><td>フル再スキャン / 焦点スキャン</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>選び方の意味:</p>
+
+<ul>
+  <li><strong>再利用</strong> — スキャンしない。下流はいまのストアをそのまま読む。記録したリポジトリをすべて再利用したとき、ステージは skipped</li>
+  <li><strong>フル再スキャン</strong> — リポジトリ全体を読み直し、9 ファイルを置き換える</li>
+  <li><strong>焦点スキャン</strong> — このインテントの領域を読んでストアへマージする。その外の既存の文は残す。検証できた深い被覆は和集合として積み上がる。古いか検証できない以前の深い被覆は、文としては残し、浅い扱いに落とす</li>
+</ul>
+
+<div class="note warn">
+  <p>焦点スキャンのあとに被覆が狭くなったときは、承認の前に警告が出ます。Approve は狭い被覆を受け入れること、Request Changes でスキャンを広げられます。</p>
+  <p>未初期化の git サブモジュールがあると、スキャンがコードを読めないので警告が出ます。<code>git submodule update --init --recursive</code> を先に走らせてください。</p>
+</div>
+
+<h2 id="s5">生成される成果物</h2>
+
+<p>永続成果物は <strong>9 点</strong> です。場所は <code>aidlc/spaces/&lt;space&gt;/codekb/&lt;repo&gt;/</code>。Minimal 深度でも 9 ファイルと必須セクションは揃います。短くするのは、同じ一覧をファイル間で繰り返さないことです。</p>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th>ファイル</th><th>中身</th></tr></thead>
+  <tbody>
+    <tr><td><code>business-overview.md</code></td><td>ビジネスドメイン、目的、主要機能</td></tr>
+    <tr><td><code>architecture.md</code></td><td>システム構成、パターン、コンポーネント関係（Mermaid）。ビジネストランザクションがコンポーネントをどう通るかの相互作用図が必須</td></tr>
+    <tr><td><code>code-structure.md</code></td><td>パッケージ／モジュールの分け方、ファイル分類、コードパターン</td></tr>
+    <tr><td><code>api-documentation.md</code></td><td>外部・内部の API、エンドポイント、契約</td></tr>
+    <tr><td><code>component-inventory.md</code></td><td>コンポーネント一覧、責務、依存</td></tr>
+    <tr><td><code>technology-stack.md</code></td><td>言語、フレームワーク、ライブラリと版</td></tr>
+    <tr><td><code>dependencies.md</code></td><td>外部依存と、パッケージ間の内部依存</td></tr>
+    <tr><td><code>code-quality-assessment.md</code></td><td>テスト、lint、CI/CD、ドキュメントの質、技術的負債</td></tr>
+    <tr><td><code>reverse-engineering-timestamp.md</code></td><td>実施日時、あればコミットハッシュ。末尾の Scope of Analysis が、次の再実行ガードが読む鮮度と被覆</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>reverse-engineering-timestamp.md</code> の Scope of Analysis は、読みたかった範囲ではなく、<strong>実際に深く読んだ範囲</strong> を記録します。<code>kind: full</code> はリポジトリ全体を深く読んだときだけです。それ以外は <code>kind: partial</code> です。</p>
+
+<p>レコードディレクトリに残るもの（CodeKB ではない）:</p>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+  <tbody>
+    <tr><td><code>&lt;record&gt;/inception/reverse-engineering/developer-scan[-&lt;repo&gt;].md</code></td><td>Developer から Architect への手渡し。パイプラインの鎖の証拠</td></tr>
+    <tr><td><code>&lt;record&gt;/inception/reverse-engineering/memory.md</code></td><td>ステージの観察日記。手では編集しない</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>公開の途中で使うステージングディレクトリは一時入力です。共有の <code>codekb/</code> へ直接書きません。ロック付きの公開が、ソースがスキャン後に変わったことや、並行する別インテントの公開と衝突することを止めます。</p>
+
+<p>下流（Requirements Analysis、Domain Design、Functional Design、Code Generation など）は、この 9 点を入力にします。あるのは brownfield のときです。</p>
+
+<h2 id="s6">他のナレッジとの使い分け</h2>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th></th><th>第2層ナレッジ</th><th>DocumentKB</th><th>CodeKB（この章）</th></tr></thead>
+  <tbody>
+    <tr><td><strong>中身</strong></td><td>チームが書いた標準・方針</td><td>すでに存在する文書</td><td>既存コードから合成した理解</td></tr>
+    <tr><td><strong>場所</strong></td><td><code>aidlc/spaces/&lt;space&gt;/knowledge/</code>（自由形式）</td><td><code>knowledge/documents/</code> と派生カタログ</td><td><code>aidlc/spaces/&lt;space&gt;/codekb/&lt;repo&gt;/</code></td></tr>
+    <tr><td><strong>作り方</strong></td><td>人が Markdown を置く</td><td><code>onboard</code> / <code>sync</code></td><td>Reverse Engineering ステージ</td></tr>
+    <tr><td><strong>例</strong></td><td>コーディング規約、API の形</td><td>この案件の PRD、契約、仕様 PDF</td><td>アーキテクチャ図、API 面、依存</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>「いつもこう作る」はナレッジ、「この文書が根拠である」は DocumentKB、「このリポジトリはこうなっている」は CodeKB です。</p>
+
+<h2 id="s7">次に読む</h2>
+
+<ul>
+  <li><a href="02-your-first-workflow.md">最初のワークフロー</a> — brownfield で Reverse Engineering がどこに出るか</li>
+  <li><a href="04-phases-and-stages.md">フェーズとステージ</a> — Inception での位置とパイプライン</li>
+  <li><a href="05-scopes-and-depth.md">スコープ・深度・テスト戦略</a> — スコープごとの所属。<code>infra</code> では走らない</li>
+  <li><a href="14-artifacts-reference.md">成果物リファレンス</a> — レコードディレクトリと <code>codekb/</code> の例外</li>
+  <li><a href="documentkb.md">DocumentKB</a> — 既存文書のカタログ</li>
+  <li><a href="12-cli-commands.md">CLI コマンド</a> — <code>--single</code> と <code>codekb-path</code> / <code>codekb-scope-diff</code></li>
+  <li><a href="16-worked-examples.md">実例</a> — バグ修正の通しでの 9 成果物</li>
+</ul>
+
+<footer>AI-DLC User Guide · CodeKB · 出典: docs/ja/guide/codekb.md</footer>
+
+</body>
+</html>

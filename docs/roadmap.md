@@ -1,8 +1,8 @@
 # AI-DLC Workflows 2.0 - Roadmap
 
-Status as of 2026-09-01.
+Status as of 2026-09-03.
 
-- The current v2 version is **2.6.124** (`origin/main` tip `82d2e304`).
+- The current v2 version is **2.7.0** (`origin/main` tip `96b11d39`).
   Version numbers describe the committed framework tree, not GitHub Releases.
 - AI-DLC Workflows 2.0 is **GA** on the default `main` branch. Use `main` for
   new installations and upgrades. The earlier implementation is maintained
@@ -110,6 +110,7 @@ Two strategic pillars shape how the North Star reaches users and evolves:
 | 2.6.107 | Team-owned Units and parallel Construction across teams | 1, 3 | #879 |
 | 2.6.114 | No-DAG per-Unit review continuity | 1, 4 | #947 |
 | 2.6.121 - 2.6.124 | Immutable reviewer evidence, Git-independent source binding and portable workflow state paths | 4, 6 | #888, #904, #962 |
+| 2.7.0 | GA minor baseline consolidating the 2.6.x cycle | 1-7 | #991, #992 |
 
 <!-- markdownlint-enable MD013 -->
 

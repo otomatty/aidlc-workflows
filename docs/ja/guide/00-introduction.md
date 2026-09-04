@@ -72,6 +72,8 @@ AI-DLC を**使って**ソフトウェアを作る人向けです。
 | [エージェント詳細](agents/README.md) | 担当、ステージ、ナレッジ |
 | [やり取りのモード](07-interaction-modes.md) | Guide Me / Edit File / Chat と承認ゲート |
 | [ナレッジ](08-knowledge.md) | 社内標準とチーム文書の載せ方 |
+| [DocumentKB](documentkb.md) | 既存文書のカタログ。何かと、ワークフローでの使い方 |
+| [Reverse Engineering と CodeKB](codekb.md) | 既存コードのスキャン。いつ走るかと 9 成果物 |
 | [ルールとラーニングループ](09-rules-and-the-learning-loop.md) | 訂正が残る振る舞いルール |
 | [状態と監査](10-state-and-audit.md) | 進捗と判断の残し方 |
 | [セッション管理](11-session-management.md) | 再開、やり直し、ジャンプ、復旧、報告スキル |

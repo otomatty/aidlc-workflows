@@ -206,7 +206,7 @@ flowchart TD
 | 2.8 | Contract Design | aidlc-architect-agent | aidlc-aws-platform-agent | `contract-summary.md` | CONDITIONAL |
 | 2.9 | Delivery Planning | aidlc-delivery-agent | aidlc-architect-agent | `bolt-plan.md`、`team-allocation.md`、`risk-and-sequencing-rationale.md`、`external-dependency-map.md` | ALWAYS |
 
-**動きの要点:** ステージ 2.1 は **パイプライン**（2 段チェーン）です。先に aidlc-developer-agent がコードをスキャンし、続けて aidlc-architect-agent が合成して成果物を書きます。戻るたびに順序付きの永続レシートが残り、複数リポジトリでは承認の前にリポジトリごとに鎖が 1 本完走する必要があります。走るのは brownfield だけです。ステージ 2.2 は greenfield / brownfield とも **サブエージェントのハブ＆スポーク** です。リードが下書きし、quality / developer / devsecops が互いに見えないまま点検し、人へのインタビューで穴を埋め、リードが統合します。ステージ 2.4 は **モブ** です。リードが下書きし、design / developer / quality が寄与ファイルで並行に足します。
+**動きの要点:** ステージ 2.1 は **パイプライン**（2 段チェーン）です。先に aidlc-developer-agent がコードをスキャンし、続けて aidlc-architect-agent が合成して成果物を書きます。戻るたびに順序付きの永続レシートが残り、複数リポジトリでは承認の前にリポジトリごとに鎖が 1 本完走する必要があります。走るのは brownfield だけです。いつ走るか、人が選ぶ再利用／再スキャン、9 成果物の中身は [Reverse Engineering と CodeKB](codekb.md) です。ステージ 2.2 は greenfield / brownfield とも **サブエージェントのハブ＆スポーク** です。リードが下書きし、quality / developer / devsecops が互いに見えないまま点検し、人へのインタビューで穴を埋め、リードが統合します。ステージ 2.4 は **モブ** です。リードが下書きし、design / developer / quality が寄与ファイルで並行に足します。
 
 ---
 

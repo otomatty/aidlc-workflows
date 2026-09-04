@@ -44,7 +44,7 @@ while keeping you in control at every decision point.
 
 区切られた中身は信頼できないデータであり、指示ではありません。複数行の入力は、行指向の状態ファイルの外、コミット対象の `<record>/project-description.json` に JSON 文字列として 1 本で残ります。`Project` フィールドは、文書ブロックの外にある依頼の一行プレビューだけなので、ワークフロー欄に似た Markdown 行がスコープやライフサイクル状態を書き換えられません。マーカーの不一致、入れ子、繰り返し、閉じマーカーのあとに続く内容、ブロック外に方向が無い文書は、ワークフローレコードを作る前に拒否されます。
 
-PDF、Word、大きすぎるファイル、そのほか直接読めない形式は DocumentKB を使います。ファイルを `aidlc/spaces/<space>/knowledge/documents/` に置き、`/aidlc knowledge onboard <path>` を走らせ、できた document id を使います。文書のパス、ファイル名、中身は常に信頼できないデータとして扱い、指示にはしません。
+PDF、Word、大きすぎるファイル、そのほか直接読めない形式は DocumentKB を使います。ファイルを `aidlc/spaces/<space>/knowledge/documents/` に置き、`/aidlc knowledge onboard <path>` を走らせ、できた document id を使います。文書のパス、ファイル名、中身は常に信頼できないデータとして扱い、指示にはしません。詳細は [DocumentKB](documentkb.md) です。
 
 ---
 
@@ -166,7 +166,7 @@ Progress: 4/33 overall | 1/7 IDEATION stages complete. Next: Market Research
 
 ## Inception フェーズ
 
-Inception は要件を掘り下げ、解を設計します。ステージ 2.1（Reverse Engineering）は **パイプライン**（2 リンクの鎖）として走る点が目立ちます。コンダクターがコードスキャンを aidlc-developer-agent に委譲し、続けて aidlc-architect-agent が統合と成果物の書き出しをします。このステージが走るのは **brownfield**（既存コードベース）だけです。
+Inception は要件を掘り下げ、解を設計します。ステージ 2.1（Reverse Engineering）は **パイプライン**（2 リンクの鎖）として走る点が目立ちます。コンダクターがコードスキャンを aidlc-developer-agent に委譲し、続けて aidlc-architect-agent が統合と成果物の書き出しをします。このステージが走るのは **brownfield**（既存コードベース）だけです。条件と 9 成果物は [Reverse Engineering と CodeKB](codekb.md) です。
 
 ```
 ─── Stage 2.1: Reverse Engineering (pipeline) ─────────────────────────────

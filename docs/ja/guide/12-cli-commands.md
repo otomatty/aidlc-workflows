@@ -219,7 +219,7 @@ init 列のイベントを残します（`WORKFLOW_STARTED`、`WORKSPACE_SCAFFOL
 
 ### `/aidlc knowledge <verb>` — Index and read your own documents
 
-文書 — PDF、Word、Markdown、プレーンテキスト — を `aidlc/spaces/<space>/knowledge/documents/` の下へ、好きな整理で置き、索引します。エージェントは推測せず、そこを引用できます。
+文書 — PDF、Word、Markdown、プレーンテキスト — を `aidlc/spaces/<space>/knowledge/documents/` の下へ、好きな整理で置き、索引します。エージェントは推測せず、そこを引用できます。何かと使い方は [DocumentKB](documentkb.md) です。
 
 | Command | What it does |
 |---|---|
@@ -529,7 +529,7 @@ slug または番号で、指定ステージへ直接ジャンプします。
 
 ### `/aidlc --stage <slug> --single` — Run one stage in isolation
 
-`--single` を足すと、メインのワークフローを触らず、1 ステージだけを走らせます。ステージは走り、成果物を書き、止まります。ワークフローの `Current Stage` は進みません。隔離はエンジンが強制し、慣習ではありません。方法論の一片（要件分析、リバースエンジニアリングのスキャン）だけを当て、フルライフサイクルにはコミットしないときに使います。隔離実行でも、そのステージに設定したエージェントとレビュアーは使いますが、ワークフローの学びは走らず、ワークフロー承認も聞きません。合成の完了は監査ログに残り、コマンドはそこで止まります。
+`--single` を足すと、メインのワークフローを触らず、1 ステージだけを走らせます。ステージは走り、成果物を書き、止まります。ワークフローの `Current Stage` は進みません。隔離はエンジンが強制し、慣習ではありません。方法論の一片（要件分析、リバースエンジニアリングのスキャン）だけを当て、フルライフサイクルにはコミットしないときに使います。隔離実行でも、そのステージに設定したエージェントとレビュアーは使いますが、ワークフローの学びは走らず、ワークフロー承認も聞きません。合成の完了は監査ログに残り、コマンドはそこで止まります。Reverse Engineering の条件と成果物は [Reverse Engineering と CodeKB](codekb.md) です。
 
 ```
 /aidlc --stage requirements-analysis --single
@@ -701,7 +701,7 @@ bun .kiro/tools/aidlc-utility.ts codekb-path --repo <repo>
 bun .codex/tools/aidlc-utility.ts codekb-path --repo <repo>
 ```
 
-アクティブスペースの決定論的な `aidlc/spaces/<space>/codekb/<repo>/` パスを出します。`--json` を足すと `{space, repo, dir}` です。問い合わせは何も書かず、ディレクトリも作らず、監査イベントも出しません。Reverse Engineering ステージの散文が直接呼ぶので、パスを手で組み立てません。
+アクティブスペースの決定論的な `aidlc/spaces/<space>/codekb/<repo>/` パスを出します。`--json` を足すと `{space, repo, dir}` です。問い合わせは何も書かず、ディレクトリも作らず、監査イベントも出しません。Reverse Engineering ステージの散文が直接呼ぶので、パスを手で組み立てません。ストアの役割と 9 成果物は [Reverse Engineering と CodeKB](codekb.md) です。
 
 ### `aidlc-utility codekb-snapshot` - bind a scan to source and store generations
 

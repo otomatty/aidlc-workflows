@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocumentKB — AI-DLC User Guide</title>
+<style>
+:root{
+  --ink:#1a1d21; --muted:#5b6470; --line:#dfe3e8; --line-soft:#eef1f4;
+  --accent:#1f6feb; --accent-soft:#eef4ff; --warn-soft:#fff8e6;
+  --code-bg:#f6f7f9;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0 auto; max-width:52rem; padding:3rem 1.5rem 5rem;
+  color:var(--ink); background:#fff;
+  font-family:"Yu Gothic","Hiragino Kaku Gothic ProN","Noto Sans JP","Meiryo",system-ui,sans-serif;
+  font-size:15.5px; line-height:1.9; letter-spacing:.01em;
+  font-feature-settings:"palt" 1;
+}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid rgba(31,111,235,.25)}
+a:hover{border-bottom-color:var(--accent)}
+
+.doc-head{border-bottom:3px solid var(--ink); padding-bottom:1.2rem; margin-bottom:2rem}
+.eyebrow{font-size:.75rem; letter-spacing:.16em; color:var(--muted); text-transform:uppercase; margin:0 0 .5rem}
+h1{font-size:2.4rem; line-height:1.3; margin:0 0 .6rem; letter-spacing:.01em}
+.lede{font-size:1.02rem; color:var(--muted); margin:0}
+.crumbs{margin-top:.9rem; font-size:.85rem; color:var(--muted)}
+.crumbs span{margin:0 .45rem; color:var(--line)}
+
+.toc{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:1.1rem 1.4rem; margin:0 0 2.5rem}
+.toc h2{font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 .6rem; border:0; padding:0}
+.toc ol{margin:0; padding-left:1.3rem; font-size:.92rem; line-height:1.8}
+
+h2{font-size:1.45rem; margin:3rem 0 1rem; padding-bottom:.4rem; border-bottom:1px solid var(--line); break-after:avoid}
+h3{font-size:1.08rem; margin:2rem 0 .6rem; break-after:avoid}
+h3 .n{color:var(--accent); font-variant-numeric:tabular-nums; margin-right:.4em}
+p{margin:0 0 1rem}
+ul,ol{margin:0 0 1rem; padding-left:1.5rem}
+li{margin:.25rem 0}
+
+.note{border-left:3px solid var(--accent); background:var(--accent-soft); padding:.9rem 1.1rem; border-radius:0 8px 8px 0; margin:1.2rem 0; break-inside:avoid}
+.note.warn{border-left-color:#d19b1d; background:var(--warn-soft)}
+.note p:last-child{margin-bottom:0}
+
+pre{background:var(--code-bg); border:1px solid var(--line); border-radius:8px; padding:1rem 1.1rem; overflow-x:auto; margin:1.2rem 0; break-inside:avoid}
+code{font-family:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace; font-size:.86em}
+pre code{line-height:1.65; color:#2b3138}
+:not(pre)>code{background:var(--code-bg); border:1px solid var(--line-soft); border-radius:4px; padding:.08em .38em; color:#b3306b}
+.cmt{color:#7a8592}
+
+.tw{overflow-x:auto; margin:1.4rem 0}
+table{border-collapse:collapse; width:100%; font-size:.9rem; line-height:1.7}
+th,td{border:1px solid var(--line); padding:.55rem .7rem; text-align:left; vertical-align:top}
+thead th{background:#f2f4f7; font-weight:600; white-space:nowrap}
+tbody tr:nth-child(even){background:#fafbfc}
+tbody tr{break-inside:avoid}
+td code,th code{white-space:nowrap}
+.yes{color:#1a7f4b; font-weight:600}
+.no{color:#a33; font-weight:600}
+td:first-child{white-space:nowrap}
+table.wrap1 td:not(:first-child){white-space:normal}
+
+ol.steps{counter-reset:s; list-style:none; padding-left:0}
+ol.steps li{counter-increment:s; position:relative; padding-left:2.2rem; margin:.5rem 0}
+ol.steps li::before{content:counter(s); position:absolute; left:0; top:.3rem;
+  width:1.55rem; height:1.55rem; border-radius:50%; background:var(--accent); color:#fff;
+  font-size:.8rem; line-height:1.55rem; text-align:center}
+
+footer{margin-top:3.5rem; padding-top:1rem; border-top:1px solid var(--line); font-size:.82rem; color:var(--muted)}
+
+@page{size:A4; margin:16mm 14mm 18mm}
+@media print{
+  body{max-width:none; padding:0; font-size:10.5pt; line-height:1.8}
+  a{color:var(--ink); border-bottom:0}
+  h1{font-size:22pt}
+  h2{font-size:14pt; margin:1.6rem 0 .7rem}
+  h3{margin:1rem 0 .4rem}
+  p,ul,ol{margin-bottom:.6rem}
+  pre,.tw,.note{margin:.7rem 0}
+  .doc-head{margin-bottom:1.2rem; padding-bottom:.8rem}
+  .toc{margin-bottom:1.4rem}
+  table{font-size:8.8pt}
+  pre{font-size:8.8pt}
+}
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <p class="eyebrow">AI-DLC User Guide</p>
+  <h1>DocumentKB</h1>
+  <p class="lede">既存の文書を、エージェントが ID で引用できるカタログにする仕組み</p>
+  <p class="crumbs">
+    <a href="../README.md">AI-DLC ドキュメント</a><span>·</span>User Guide<span>·</span>
+    <a href="08-knowledge.md">ナレッジ</a><span>·</span><a href="12-cli-commands.md">CLI コマンド</a>
+  </p>
+</header>
+
+<p>DocumentKB は、スペースがすでに持っている文書を、エージェントが <strong>ID で引用できるカタログ</strong> にする仕組みです。ビジョン、PRD、要件、ポリシー、契約、仕様 PDF など、ワークフローの入力になる成果物が対象です。</p>
+
+<div class="note">
+  <p>人が Markdown で書く <a href="08-knowledge.md">第2層ナレッジ</a>（「いつもこう作る」）とは別です。既存コードのリバースエンジニアリング成果物を置く CodeKB とも別です。</p>
+</div>
+
+<nav class="toc">
+  <h2>目次</h2>
+  <ol>
+    <li><a href="#s1">何か</a></li>
+    <li><a href="#s2">どのように活用するか</a></li>
+    <li><a href="#s3">どのファイルが使えるか</a></li>
+    <li><a href="#s4">コマンド</a></li>
+    <li><a href="#s5">抽出の状態</a></li>
+    <li><a href="#s6">第2層ナレッジとの使い分け</a></li>
+    <li><a href="#s7">次に読む</a></li>
+  </ol>
+</nav>
+
+<h2 id="s1">何か</h2>
+
+<p>エージェントは、ディスクに置いただけの PDF や Word を自動では読みません。DocumentKB に載せて初めて、次が決まります。</p>
+
+<ul>
+  <li>どのファイルか（文書 ID、パス、ダイジェスト）</li>
+  <li>本文が取れたか（抽出状態）</li>
+  <li>どのインテントから見えるか</li>
+  <li>引用してよいか（カタログ行があること）</li>
+</ul>
+
+<p>カタログは <strong>派生</strong> です。原本はチームが持ち、索引・抽出本文・要約はツールがトランザクションで書きます。</p>
+
+<pre><code>aidlc/spaces/&lt;space&gt;/knowledge/
+├── documents/       <span class="cmt"># チーム所有の原本。追加・移動・削除は人がする</span>
+└── documentkb/      <span class="cmt"># ツール所有の派生カタログ。手で直さない</span>
+    ├── index.json
+    └── &lt;document-id&gt;/
+        ├── metadata.json
+        ├── content.md      <span class="cmt"># 抽出できたとき</span>
+        └── summary.md      <span class="cmt"># summarize したとき</span></code></pre>
+
+<p><code>&lt;space&gt;</code> は名前付きスペースを使わなければ <code>default</code> です。フレームワークは <code>documents/</code> を並べ替えたり消しません。消すときは原本を消し、そのあと <code>sync</code> します。<code>remove</code> コマンドはありません。</p>
+
+<p><code>index.json</code> だけ失ったときは <code>sync</code> が、残っている文書ごとの <code>metadata.json</code>（墓石を含む）から組み直します。<code>documentkb/</code> ごと消すと ID と墓石は戻りません。残った原本は新しい行として再索引されます。</p>
+
+<div class="note warn">
+  <p>抽出本文・要約・タグは <strong>信頼できないデータ</strong> です。文書の中の命令文は、AI-DLC の指示ではありません。<code>show</code> はその注記を本文と並べて出します。</p>
+</div>
+
+<h2 id="s2">どのように活用するか</h2>
+
+<h3><span class="n">1.</span>既存文書からワークフローを始める</h3>
+<p>テキストや短い Markdown を <code>/aidlc</code> に直接渡すだけなら、DocumentKB は不要です。<a href="02-your-first-workflow.md#starting-from-an-existing-document">既存文書から始める</a> のパス指定や <code>&lt;document&gt;</code> ブロックで足ります。</p>
+<p>PDF、Word、サイズの大きいファイルは、いったんカタログへ載せ、できた文書 ID をワークフローの入力にします。エージェントはファイル名を推測せず、索引された行だけを引用します。</p>
+
+<h3><span class="n">2.</span>スペースの共通根拠を置く</h3>
+<p>ポリシー、契約、ドメイン用語、横断の仕様は、インテントを付けずに onboard します。そのスペースのどのワークフローからも見えます。「この案件だけ」に閉じない根拠向きです。</p>
+
+<h3><span class="n">3.</span>案件の文書を一つのインテントへ絞る</h3>
+<p>そのワークフロー専用の PRD や要件は <code>associate</code> します。他のインテントのエージェントは引きません。終わったあとも文書はスペースに残り、絞りを外すとまた全体から見えます。</p>
+
+<h3><span class="n">4.</span>要約で要旨だけ載せる</h3>
+<p><code>summarize</code> は、エージェントが書いた短い要旨を、そのリビジョンに紐づけて残します。ツール自身は本文を生成しません。全文を毎回読まずに、何の文書かを先に判断できます。原本を直して <code>sync</code> すると要約は <code>invalidated</code> になり、古い文は出ません。</p>
+
+<h3><span class="n">5.</span>原本の更新をカタログへ反映する</h3>
+<p><code>documents/</code> のファイルを置き換えたら <code>sync</code> します。ダイジェストが変わった行は再抽出し、古い本文と要約は無効になります。パスは同じで中身だけ変わったときは、<code>onboard</code> もその行を <code>edited</code> として更新します。パスも中身も変わったときだけ <code>rebind</code> が要ります。</p>
+
+<p><strong>典型的な流れ</strong></p>
+<ol class="steps">
+  <li>対象ファイルを <code>aidlc/spaces/&lt;space&gt;/knowledge/documents/</code> へ置く</li>
+  <li><code>/aidlc knowledge onboard</code>（またはパス付きで 1 件）</li>
+  <li><code>/aidlc knowledge list</code> で <code>extracted</code> を確認する</li>
+  <li>必要なら <code>associate</code> でインテントへ絞る</li>
+  <li><code>/aidlc knowledge show &lt;id&gt;</code> で本文を引用する</li>
+  <li>原本が変わったら同じパスへ置き、<code>/aidlc knowledge sync</code></li>
+</ol>
+
+<p>1 ファイルの例（相対パスはプロジェクトルート基準）:</p>
+<pre><code>/aidlc knowledge onboard aidlc/spaces/default/knowledge/documents/prd/checkout.pdf</code></pre>
+
+<p>フォルダ分けはチームの整理です。例:</p>
+<pre><code>aidlc/spaces/default/knowledge/documents/
+├── prd/
+│   └── checkout.pdf
+├── specs/
+│   └── api-error-codes.md
+└── policies/
+    └── security-policy.pdf</code></pre>
+
+<p>ファイル名はデータであり、エージェントへの指示ではありません。</p>
+
+<h2 id="s3">どのファイルが使えるか</h2>
+
+<p>判定は拡張子より中身（マジックバイト）が先です。<strong>索引に載ること</strong>と<strong>本文が取れること</strong>は別です。載っただけの行も、名前では引用できます。エージェントが中身を使うなら、本文が取れる形式で置きます。</p>
+
+<div class="tw">
+<table>
+  <thead><tr><th>形式</th><th>索引</th><th>本文抽出（出荷のまま）</th><th>備考</th></tr></thead>
+  <tbody>
+    <tr><td>Markdown（<code>.md</code>）</td><td class="yes">できる</td><td class="yes">できる（組み込み）</td><td>UTF-8</td></tr>
+    <tr><td>プレーンテキスト（<code>.txt</code> など）</td><td class="yes">できる</td><td class="yes">できる（組み込み）</td><td>UTF-8。Latin-1 などは拒否され得る</td></tr>
+    <tr><td>PDF</td><td class="yes">できる</td><td class="yes">できる（既定 <code>pdftotext</code>）</td><td>PATH に Poppler が要る。最大 50 ページ</td></tr>
+    <tr><td>Word（<code>.docx</code>、OOXML）</td><td class="yes">できる</td><td class="no">未設定なら取れない（<code>unsupported_type</code>）</td><td>種類は識別する。抽出器を設定すれば <code>sync</code> で再試行できる</td></tr>
+    <tr><td>Word 旧形式（<code>.doc</code>）</td><td>載っても種類は不明</td><td class="no">取れない</td><td><code>application/octet-stream</code></td></tr>
+    <tr><td>Excel（<code>.xlsx</code> / <code>.xls</code>）</td><td>載っても種類は不明</td><td class="no">取れない</td><td>表は CSV か Markdown に書き出して載せる</td></tr>
+    <tr><td>PowerPoint（<code>.pptx</code> / <code>.ppt</code>）</td><td>載っても種類は不明</td><td class="no">取れない</td><td>PDF かノートのテキストに書き出して載せる</td></tr>
+    <tr><td>画像（JPEG / PNG など）</td><td>載っても種類は不明</td><td class="no">取れない</td><td>OCR なし</td></tr>
+    <tr><td>その他バイナリ</td><td>載っても種類は不明</td><td class="no">取れない</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>上限</strong></p>
+<ul>
+  <li>1 ファイル 32 MiB。超えると読む前に拒否</li>
+  <li>パス無しの <code>onboard</code> / <code>sync</code> は、新しい・変わった仕事に 20 文書 / 256 MiB</li>
+  <li>抽出本文は 20 万文字。超えると切れて <code>truncated</code></li>
+</ul>
+
+<p>シンボリックリンク、ハードリンク、ディレクトリそのものは索引しません。スキャン PDF の OCR は対象外です。</p>
+
+<div class="note">
+  <p>出荷状態では Word は種類だけ分かり、本文は取りません。<code>harness.json</code> の <code>documentExtractors</code> に、その MIME 向けの外部コマンドを設定します。<code>argv</code> は配列で、<code>$IN</code> が引数にちょうど 1 つ要ります（シェル文字列は不可）。設定したあと <code>sync</code> すると、変わっていない Word 行も再試行します。同じパスへ <code>onboard</code> し直しても <code>already</code> と出るだけで、抽出は再試行しません。</p>
+</div>
+
+<p>Excel / PowerPoint は、抽出器を足しても種類自体を spreadsheet / presentation として識別しません。表やスライドの本文が要るなら、CSV / Markdown / PDF に書き出します。</p>
+
+<h2 id="s4">コマンド</h2>
+
+<p>入口は <code>/aidlc knowledge &lt;動詞&gt;</code> です。同じ面は <code>/aidlc-knowledge</code> スキルでも案内します。フラグの詳細は <a href="12-cli-commands.md">CLI コマンド</a> です。</p>
+
+<div class="tw">
+<table>
+  <thead><tr><th>コマンド</th><th>役割</th></tr></thead>
+  <tbody>
+    <tr><td><code>onboard [path]</code></td><td>1 ファイル、または <code>documents/</code> 以下の未索引ファイルを索引する。冪等</td></tr>
+    <tr><td><code>sync</code></td><td>原本と突き合わせる。新規、墓石、再抽出、失った <code>index.json</code> の再構築</td></tr>
+    <tr><td><code>list [--json]</code></td><td>全行と状態</td></tr>
+    <tr><td><code>show &lt;id&gt;</code></td><td>1 件の記録と抽出本文</td></tr>
+    <tr><td><code>associate</code> / <code>dissociate</code></td><td>インテントへの絞りを付ける / 外す</td></tr>
+    <tr><td><code>rebind &lt;id&gt; --to &lt;path&gt;</code></td><td>原本が移動かつ内容変更した行を直す（<code>sync</code> では解けない）</td></tr>
+    <tr><td><code>summarize &lt;id&gt; …</code></td><td>LLM が書いた要約（と任意タグ）を残す。ツールは本文を生成しない</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>onboard</code> の結果は <code>fresh</code> / <code>already</code> / <code>edited</code> です。同じパスが生きた行を 2 つ持つことはありません。<code>--intent</code> を省略した onboard はスペース全体です。素の <code>--intent</code> はアクティブインテント、<code>--intent &lt;slug&gt;</code> は明示の名前です。</p>
+
+<h2 id="s5">抽出の状態</h2>
+
+<p><code>list</code> と <code>show</code> に出る状態は、直し方がそれぞれ違います。</p>
+
+<div class="tw">
+<table>
+  <thead><tr><th>状態</th><th>意味</th><th>次にすること</th></tr></thead>
+  <tbody>
+    <tr><td><code>extracted</code></td><td>本文が取れた</td><td>そのまま <code>show</code> で引用</td></tr>
+    <tr><td><code>no_extractable_text</code></td><td>抽出器は走ったが文字が無い（スキャン PDF など）</td><td>テキスト版を用意する。OCR は対象外</td></tr>
+    <tr><td><code>extractor_unavailable</code></td><td>設定した抽出器が PATH に無い</td><td>入れてから <code>sync</code></td></tr>
+    <tr><td><code>extraction_failed</code></td><td>抽出器が失敗した</td><td><code>show</code> で理由を見る</td></tr>
+    <tr><td><code>unsupported_type</code></td><td>この種類の抽出器が無い</td><td>対応形式へ書き出すか、Word なら抽出器を設定して <code>sync</code></td></tr>
+    <tr><td><code>invalidated</code></td><td>原本が変わった</td><td><code>sync</code> で再抽出</td></tr>
+    <tr><td><code>tombstoned</code></td><td>原本を消した</td><td>意図した削除。カタログは覚える</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note warn">
+  <p>切れた抽出（<code>truncated</code>）は部分ビューです。「この文書は X に触れていない」とは、それだけでは言えません。</p>
+</div>
+
+<h2 id="s6">第2層ナレッジとの使い分け</h2>
+
+<div class="tw">
+<table class="wrap1">
+  <thead><tr><th></th><th>第2層ナレッジ（<code>aidlc/knowledge/</code>）</th><th>DocumentKB（<code>knowledge/documents/</code>）</th></tr></thead>
+  <tbody>
+    <tr><td><strong>中身</strong></td><td>チームが書いた標準・方針</td><td>すでに存在する成果物</td></tr>
+    <tr><td><strong>形式</strong></td><td>Markdown</td><td>PDF、テキスト、Word、書き出した CSV など</td></tr>
+    <tr><td><strong>読み方</strong></td><td>エージェント起動時にディレクトリから載る</td><td><code>onboard</code> した行だけ <code>list</code> / <code>show</code> で引用</td></tr>
+    <tr><td><strong>例</strong></td><td>コーディング規約、API の形</td><td>この案件の PRD、契約、仕様 PDF</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>「いつもこう作る」はナレッジ、「この文書が根拠である」は DocumentKB です。</p>
+
+<h2 id="s7">次に読む</h2>
+
+<ul>
+  <li><a href="08-knowledge.md">ナレッジ</a> — 二層のナレッジと DocumentKB の位置づけ</li>
+  <li><a href="02-your-first-workflow.md#starting-from-an-existing-document">最初のワークフロー</a> — 既存文書から <code>/aidlc</code> を始める</li>
+  <li><a href="12-cli-commands.md">CLI コマンド</a> — 動詞、バッチ上限、抽出器の契約</li>
+  <li><a href="03-spaces-and-intents.md">スペースとインテント</a> — <code>documents/</code> と <code>documentkb/</code> のコミット対象</li>
+</ul>
+
+<footer>AI-DLC User Guide · DocumentKB · 出典: docs/ja/guide/documentkb.md</footer>
+
+</body>
+</html>

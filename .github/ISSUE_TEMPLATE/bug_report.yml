@@ -61,7 +61,7 @@ body:
     attributes:
       label: Release / Commit
       description: The release number or git commit hash if running from source.
-      placeholder: e.g., 2.6.124 or abc1234
+      placeholder: e.g., 2.7.0 or abc1234
 
   - type: dropdown
     id: phase

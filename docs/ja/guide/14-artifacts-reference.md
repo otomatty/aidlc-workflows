@@ -70,7 +70,7 @@ aidlc/spaces/<space>/intents/<YYMMDD>-<label>/   # one record dir per intent
     {ISO-date}-{stage-name}/
 ```
 
-**リバースエンジニアリングの成果物 9 点はレコードディレクトリにありません。** `architecture.md`、`code-structure.md`、`technology-stack.md` などは一つ上、スペース単位のリポジトリ別 CodeKB — `aidlc/spaces/<space>/codekb/<repo>/` — に置きます。インテントごとのコピーではなく、リポジトリにつき 1 ストアです。該当するブラウンフィールドのインテントでは、ステージがまずストアに記録されたスコープとワーキングツリーの指紋を見ます。検証済みで新しいストアの被覆がインテントに足りていれば、人が選べば再利用できます。そうでなければ全スキャンが 9 ファイルを置き換え、フォーカススキャンは解析した領域だけをマージし、その外の既存の散文は残します。検証済みの新しい被覆は和集合として積み上がります。古いか検証できない以前の深い被覆は散文として残し、浅い扱いに落とします（`reverse-engineering-timestamp.md` が最後のスキャン時刻と被覆を記録します）。スキャン前のソース / ストア世代と、全成果物のロック付き公開で、ソース変更を「新しい」と誤認せず、並行するフォーカススキャンが互いを黙って上書きしないようにしています。したがってインテントが読むのは、自分のレコードディレクトリができたときのスキャンではなく、そのリポジトリの最新スキャンです。レコードディレクトリに入るのはステージ自身の `memory.md` 日記だけです。エンジンが run-stage ディレクティブを出すときに作ります（下の **ステージごとの memory 日記**）。なので `inception/reverse-engineering/` はそこに現れ得ますが、中身は日記だけです。codekb への書き込みは `codekb > <repo> > <name>` のパンくずで監査に残るので、インテント単位の証跡でも何がいつ変わったかは追えます。
+**リバースエンジニアリングの成果物 9 点はレコードディレクトリにありません。** `architecture.md`、`code-structure.md`、`technology-stack.md` などは一つ上、スペース単位のリポジトリ別 CodeKB — `aidlc/spaces/<space>/codekb/<repo>/` — に置きます。インテントごとのコピーではなく、リポジトリにつき 1 ストアです。該当するブラウンフィールドのインテントでは、ステージがまずストアに記録されたスコープとワーキングツリーの指紋を見ます。検証済みで新しいストアの被覆がインテントに足りていれば、人が選べば再利用できます。そうでなければ全スキャンが 9 ファイルを置き換え、フォーカススキャンは解析した領域だけをマージし、その外の既存の散文は残します。検証済みの新しい被覆は和集合として積み上がります。古いか検証できない以前の深い被覆は散文として残し、浅い扱いに落とします（`reverse-engineering-timestamp.md` が最後のスキャン時刻と被覆を記録します）。スキャン前のソース / ストア世代と、全成果物のロック付き公開で、ソース変更を「新しい」と誤認せず、並行するフォーカススキャンが互いを黙って上書きしないようにしています。したがってインテントが読むのは、自分のレコードディレクトリができたときのスキャンではなく、そのリポジトリの最新スキャンです。レコードディレクトリに入るのはステージ自身の `memory.md` 日記だけです。エンジンが run-stage ディレクティブを出すときに作ります（下の **ステージごとの memory 日記**）。なので `inception/reverse-engineering/` はそこに現れ得ますが、中身は日記だけです。codekb への書き込みは `codekb > <repo> > <name>` のパンくずで監査に残るので、インテント単位の証跡でも何がいつ変わったかは追えます。オンボーディングは [Reverse Engineering と CodeKB](codekb.md) です。
 
 **チームナレッジもレコードディレクトリにありません。** 一つ上のスペース単位 — `aidlc/spaces/<space>/knowledge/`（`intents/` の兄弟）— に置き、1 インテントに閉じ込めず、そのスペースの全インテントで積み上がります。エンジンは空で作り、チームが任意の `aidlc-shared/` とエージェント別サブディレクトリに自由形式のファイルを足します。[ナレッジ](08-knowledge.md)。
 
@@ -137,7 +137,7 @@ flowchart LR
 
 | ステージ | 主な成果物 | 条件 |
 |----------|------------|------|
-| 2.1 Reverse Engineering | `architecture.md`、`code-structure.md`、`technology-stack.md` を含む 9 ファイル（スペース単位の `aidlc/spaces/<active-space>/codekb/<repo>/` へ書く。リポジトリにつき 1 つの共有ストア。検証済みで新しければ再利用、全スキャンで置き換え、フォーカススキャンで累積拡張。インテントのレコードに入るのはステージの `memory.md` 日記だけ） | ブラウンフィールドのみ |
+| 2.1 Reverse Engineering | `architecture.md`、`code-structure.md`、`technology-stack.md` を含む 9 ファイル（スペース単位の `aidlc/spaces/<active-space>/codekb/<repo>/` へ書く。リポジトリにつき 1 つの共有ストア。検証済みで新しければ再利用、全スキャンで置き換え、フォーカススキャンで累積拡張。インテントのレコードに入るのはステージの `memory.md` 日記だけ）。オンボーディングは [Reverse Engineering と CodeKB](codekb.md) | ブラウンフィールドのみ |
 | 2.2 Practices Discovery | `team-practices.md`、`discovered-rules.md`、`evidence.md`、`practices-discovery-timestamp.md`、加えて quality / developer / devsecops の寄与ファイル（承認後に `aidlc/spaces/<active-space>/memory/team.md` と `project.md` へ昇格） | 条件付き |
 | 2.3 Requirements Analysis | `requirements.md` | 常時 |
 | 2.4 User Stories | `stories.md`、`personas.md` | 利用者向け機能 |
