@@ -1,15 +1,14 @@
 # AI-DLC Workflows 2.0 - Roadmap
 
-Status as of 2026-09-03.
+Status as of 2026-09-14.
 
-- The current v2 version is **2.7.0** (`origin/main` tip `96b11d39`).
-  Version numbers describe the committed framework tree, not GitHub Releases.
+- The latest stable release is **2.8.2** (tag `v2.8.2`, `upstream/main` tip `a0ee4415`).
+  Version numbers describe the committed framework tree; GitHub Releases now mark `v2.8.2` as Latest.
 - AI-DLC Workflows 2.0 is **GA** on the default `main` branch. Use `main` for
   new installations and upgrades. The earlier implementation is maintained
   separately on `v1`.
-- Release publication is not yet aligned with `main`: GitHub still marks
-  `v1.0.1` as Latest, tracked by #635. The native distribution implementation
-  for #722 remains under review in #756; no public v2 native release exists yet.
+- Native binaries, installers, version selection, project configuration and
+  release provenance shipped through #722 and #756.
 - PR validation now includes the deterministic integration and end-to-end tiers
   in addition to smoke, unit, packaging, typecheck and lint (#791).
 
@@ -111,6 +110,8 @@ Two strategic pillars shape how the North Star reaches users and evolves:
 | 2.6.114 | No-DAG per-Unit review continuity | 1, 4 | #947 |
 | 2.6.121 - 2.6.124 | Immutable reviewer evidence, Git-independent source binding and portable workflow state paths | 4, 6 | #888, #904, #962 |
 | 2.7.0 | GA minor baseline consolidating the 2.6.x cycle | 1-7 | #991, #992 |
+| 2.7.0 - 2.8.0 | Native binaries, installers, project configuration, version selection, update and tag-bound release provenance | - | #756, #993, #1050 |
+| 2.7.1 - 2.8.2 | Plan Approval and Change Control hardening, cross-harness native-hook repairs, config wizard fixes and stable/preview release channels | 1, 3, 4 | #997, #1000, #1054, #1064, #1065, #1067, #1008, #1097, #1111, #1127, #1129 |
 
 <!-- markdownlint-enable MD013 -->
 
