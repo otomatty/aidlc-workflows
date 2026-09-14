@@ -4,7 +4,7 @@
 
 訳は直訳ではなく、エンジニアが読んで自然な日本語になるよう言い換えています。コマンド名・パス・コード・固有名詞はそのまま残しています。
 
-導入手順だけ先に読む場合は [導入方法](../導入方法.md)（Claude Code / GitHub Copilot）を見てください。
+導入手順だけ先に読む場合は [導入方法](../導入方法.md)（Claude Code / GitHub Copilot）を見てください。ネイティブの入れ方・更新・ピン・オフラインは [Install and Lifecycle](guide/18-install-and-lifecycle.md) です。
 
 ## 訳してあるもの / まだ英語のもの
 
@@ -15,6 +15,12 @@
 | User Guide | `/aidlc` でソフトウェアを作る人向け | [guide/00-introduction.md](guide/00-introduction.md) |
 | Harness Engineer Guide | ステージやエージェントなど**データ**を足す人向け | [harness-engineering/00-overview.md](harness-engineering/00-overview.md) |
 | Developer Reference | エンジンやフックなど**コード**を変える人向け | [reference/00-overview.md](reference/00-overview.md) |
+
+2.8.2 で足した章:
+
+- [Install and Lifecycle](guide/18-install-and-lifecycle.md)
+- [Supply-Chain Security](reference/19-supply-chain-security.md)
+- [Commit Provenance](reference/20-commit-provenance.md)
 
 ロードマップは [roadmap.md](roadmap.md) です。
 
@@ -52,7 +58,7 @@
 | プラグイン | plugin | ステージや寄与を足す拡張 |
 | ワークフロー | workflow | `/aidlc` から始まる 1 回の実行 |
 
-パス（`core/`、`dist/`、`aidlc/` など）とコマンド（`/aidlc`、`bun`）は訳しません。
+パス（`core/`、`dist/`、`aidlc/` など）とコマンド（`/aidlc`、`aidlc`、`bun`）は訳しません。
 
 ## リンク
 

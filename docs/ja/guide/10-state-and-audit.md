@@ -80,24 +80,25 @@ stateDiagram-v2
 
 監査証跡はインテントのレコードディレクトリ、`aidlc/spaces/<space>/intents/<YYMMDD>-<label>/audit/` にあります。追記専用のイベントログで、**クローンごとのシャード**（`<host>-<clone>.md`）です。各クローンは自分のシャードにだけ追記するので、兄弟 worktree からの同時追記が git 衝突しません。読む側は `audit/*.md` をグロブし、ISO 時刻でマージソートして、判断とイベントの時系列を復元します。
 
-### 91 種のイベント分類
+### 98 種のイベント分類
 
-イベントは 22 カテゴリです。
+イベントは 24 カテゴリです。
 
 | カテゴリ | 件数 | イベント |
 |----------|------:|--------|
-| **Workflow Lifecycle** | 4 | `WORKFLOW_STARTED`, `WORKFLOW_COMPLETED`, `WORKFLOW_PARKED`, `WORKFLOW_UNPARKED` |
+| **Workflow Lifecycle** | 6 | `WORKFLOW_STARTED`, `WORKFLOW_COMPLETED`, `WORKFLOW_PARKED`, `WORKFLOW_UNPARKED`, `WORKFLOW_ARCHIVED`, `WORKFLOW_UNARCHIVED` |
 | **Phase Lifecycle** | 4 | `PHASE_STARTED`, `PHASE_COMPLETED`, `PHASE_VERIFIED`, `PHASE_SKIPPED` |
 | **Stage Lifecycle** | 6 | `STAGE_STARTED`, `STAGE_AWAITING_APPROVAL`, `STAGE_REVISING`, `STAGE_COMPLETED`, `STAGE_SKIPPED`, `STAGE_JUMPED` |
 | **Session** | 5 | `SESSION_STARTED`, `SESSION_RESUMED`, `SESSION_COMPACTED`, `SESSION_ENDED`, `HUMAN_TURN`（フック発行） |
 | **Initialization** | 3 | `WORKSPACE_SCAFFOLDED`, `WORKSPACE_SCANNED`, `WORKSPACE_INITIALISED` |
 | **Navigation** | 7 | `SCOPE_CHANGED`, `SCOPE_DETECTED`, `DEPTH_CHANGED`, `TEST_STRATEGY_CHANGED`, `REVIEW_CLASS_CHANGED`, `RECOMPOSED`, `PLUGIN_SELECTION_CHANGED` |
-| **Interaction** | 9 | `DECISION_RECORDED`, `GATE_APPROVED`, `GATE_REJECTED`, `QUESTION_ANSWERED`, `SUMMARY_CONFIRMATION_RECORDED`, `PLAN_APPROVAL_RECORDED`, `REVIEW_REQUESTED`, `REVIEW_COMPLETED`, `PIPELINE_LINK_COMPLETED` |
+| **Change Control** | 2 | `CHANGE_CONTROL_SET`, `CHANGE_ACCEPTED` |
+| **Interaction** | 10 | `DECISION_RECORDED`, `GATE_APPROVED`, `GATE_REJECTED`, `QUESTION_ANSWERED`, `SUMMARY_CONFIRMATION_RECORDED`, `PLAN_APPROVAL_RECORDED`, `PLAN_APPROVAL_OVERRIDDEN`, `REVIEW_REQUESTED`, `REVIEW_COMPLETED`, `PIPELINE_LINK_COMPLETED` |
 | **Unit Configuration and Lifecycle** | 7 | `UNIT_OWNERSHIP_SET`, `UNIT_GATE_RHYTHM_SET`, `UNIT_STARTED`, `UNIT_PAUSED`, `UNIT_RESUMED`, `UNIT_COMPLETED`, `UNIT_MERGED` |
 | **Artifact** | 3 | `ARTIFACT_CREATED`, `ARTIFACT_UPDATED`（write-audit-log フック）、`ARTIFACT_REUSED` |
 | **Subagent** | 1 | `SUBAGENT_COMPLETED`（log-subagent フック） |
 | **Reviewer Enforcement** | 2 | `REVIEWER_SCOPE_BLOCKED`（reviewer-scope フック）、`REVIEW_FREEZE_BLOCKED`（review-freeze フック） |
-| **Plan Approval** | 1 | `PLAN_APPROVAL_BLOCKED`（plan-approval-guard フック） |
+| **Plan Approval** | 2 | `PLAN_APPROVAL_BLOCKED`, `GUARD_DISABLED`（plan-approval-guard フック） |
 | **Documents** | 3 | `DOCUMENT_INDEXED`, `DOCUMENT_UPDATED`, `DOCUMENT_REMOVED` — インテント範囲でもスペース単位のシャード |
 | **Utility** | 1 | `HEALTH_CHECKED` |
 | **Error/Recovery** | 2 | `ERROR_LOGGED`, `RECOVERY_COMPLETED` |
@@ -108,6 +109,7 @@ stateDiagram-v2
 | **Sensors** | 5 | `SENSOR_FIRED`, `SENSOR_PASSED`, `SENSOR_FAILED`, `SENSOR_BUDGET_OVERRIDE`, `GUARDRAIL_LOADED` |
 | **Learning Loop** | 3 | `MEMORY_EMPTY`, `RULE_LEARNED`, `SENSOR_PROPOSED` |
 | **Swarm** | 7 | `SWARM_STARTED`, `SWARM_UNIT_CONVERGED`, `SWARM_SOURCE_MERGED`, `SWARM_UNIT_FAILED`, `SWARM_BATON_RETURNED`, `SWARM_COMPLETED`, `SWARM_DEGRADED` |
+| **Commit Provenance** | 1 | `SOURCE_COMMITTED`（`aidlc attest anchor`、または任意のセッション開始スイープ — 豊かにするためだけ。`resolve` は読まない） |
 
 ### 何をいつ記録するか
 
@@ -123,7 +125,7 @@ stateDiagram-v2
 各エントリは次の欄を持つ構造です。
 
 - **Timestamp** — ISO 8601 時刻
-- **Event** — 91 種のいずれか
+- **Event** — 98 種のいずれか
 - **Details** — イベント固有のデータ（ステージ名、判断、成果物パスなど）
 
 追記は時系列です。特定ステージの履歴を見るときは、その `STAGE_STARTED` と `STAGE_COMPLETED`、その間のすべてを探します。

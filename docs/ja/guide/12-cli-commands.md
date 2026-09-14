@@ -1,6 +1,6 @@
 # CLI コマンド
 
-AI-DLC のコマンドは、どれもオーケストレータの起動から始まります。この章は、起動の形とフラグの完全なリファレンスです。
+AI-DLC の利用者が触るコマンド面は二つです。ハーネスのチャットコマンドは `/aidlc`（Codex では `$aidlc`）でワークフローを進めます。入れたネイティブの `aidlc` は、プロジェクトの初期化と、マシン寿命・診断・ライフサイクルの経路を担います。
 
 > **起動の接頭辞はハーネスで違います。** Claude Code、Kiro IDE、Kiro CLI、
 > Cursor、opencode、GitHub Copilot では `/aidlc`。Codex CLI では `$aidlc`
@@ -28,11 +28,13 @@ AI-DLC のコマンドは、どれもオーケストレータの起動から始�
 | `/aidlc compose --report <path>` | スキャン報告から compose する（所見を短い fix-and-ship 実行へ振り分ける） |
 | `/aidlc --new-scope "<task>"` | 配布スコープが当たっても、コンポーザーに独自スコープを合成させる |
 | `/aidlc` | 既存ワークフローを再開する（インテントがあるとき）。無ければ最初のインテントを作り、新規開始する |
-| `/aidlc intent [name]` | アクティブスペースのインテントを列挙する。または既存インテントへ切り替える |
+| `/aidlc intent [name]` | アクティブスペースのインテントを列挙する（`--all` はアーカイブ済みも含む）。または既存インテントへ切り替える |
+| `/aidlc intent archive <name>` | 進行中のインテントを、記録を消さずに引退させる。`unarchive <name>` で戻す |
 | `/aidlc space [name]` | スペースを列挙する。または既存スペースへ切り替える |
 | `/aidlc space-create <name>` | フレームワークの基準から新しいスペースを作る |
 | `/aidlc knowledge <verb>` | 自分の文書を索引し、読む（`onboard`、`sync`、`list`、`show`、`associate`、`dissociate`、`rebind`、`summarize`） |
 | `/aidlc --status` | 読み取り専用の状況要約を出す |
+| `/aidlc --config [section]` | 会話でプロジェクト方針を決め、正確な決定論的 config フラグで着地させる |
 | `/aidlc --claim <unit> [--team <label>] [--rhythm <per-stage\|unit-end>]` | チーム所有の空きユニットを原子的に claim し、このチェックアウトをその試行へ結ぶ |
 | `/aidlc --release <unit>` | スコープ無しの main から、生きている Unit claim を墓石の公開で解放する |
 | `/aidlc unit adopt <unit>` | 新しい clone で、チェックアウト済みの生きている claim ブランチを adopt する |
@@ -43,7 +45,7 @@ AI-DLC のコマンドは、どれもオーケストレータの起動から始�
 | `/aidlc unit land <unit> ...` | 再開可能な git → 状態 → 監査の landing トランザクションを走らせる |
 | `/aidlc unit merge-status <unit>` | ローカルの pinned-merge トランザクション日誌を読む |
 | `/aidlc unit status` | いま claim できる、claim 済み、依存で止まっている Unit 集合を読む |
-| `/aidlc --doctor` | セットアップのヘルスチェックを走らせる |
+| `/aidlc --doctor [--check-updates]` | ヘルスチェックを走らせる。明示フラグは更新メタデータを取り直す |
 | `/aidlc --doctor --export` | 新しいヘルスチェックを走らせ、共有用の小さくマスキングした診断報告を書く |
 | `/aidlc --stage <slug\|#>` | 指定ステージへジャンプする |
 | `/aidlc --stage <slug> --single` | 1 ステージだけ隔離実行する。ワークフローは進めない |
@@ -52,6 +54,7 @@ AI-DLC のコマンドは、どれもオーケストレータの起動から始�
 | `/aidlc --depth <level>` | 深度を上書きする（minimal、standard、comprehensive） |
 | `/aidlc --test-strategy <level>` | テスト戦略を上書きする（minimal、standard、comprehensive） |
 | `/aidlc --review <class>` | この実行のステージレビュー上限（adversarial、advisory、none） |
+| `/aidlc --change-control <value>` | この仕事で、承認後の入力変化が何をするかをセットする（strict、relaxed） |
 | `/aidlc config get <key>` | アクティブワークフローの設定を出す（`depth`、`test-strategy`、`review`） |
 | `/aidlc config set <key> <value>` | アクティブワークフローの設定を変える（`depth`、`test-strategy`、`review`） |
 | `/aidlc config list` | アクティブワークフローの設定を列挙する（構造化は `--json`） |
@@ -63,6 +66,21 @@ AI-DLC のコマンドは、どれもオーケストレータの起動から始�
 | `/aidlc --version` | フレームワークの版を出す |
 | `/aidlc --help` | 使い方を出す |
 | `bun .claude/tools/aidlc-utility.ts select-plugins [names]` | プラグイン選択の直接ユーティリティ形 |
+
+---
+
+## 端末の色
+
+公開の端末コマンド 6 つ（`config`、`doctor`、`version`、`update`、`use`、`uninstall`）は、人が読む出力にだけ、控えめな色を付けます。JSON、静かな出力、ファイル、監査記録、TTY ではないストリームは色無しのままです。
+
+色の選択は次の優先です:
+
+1. `--no-color` は色を止めます。
+2. 環境変数 `NO_COLOR` がセットされていれば、値に関係なく色を止めます。
+3. 空でない `FORCE_COLOR` が `0` 以外なら、色を付けます。
+4. それ以外は、ストリームが TTY で `TERM` が `dumb` ではないときだけ色を付けます。
+
+判定は stdout と stderr で別々です。1 コマンドだけなら `--no-color`、シェルやプロセス環境なら `NO_COLOR=1`、端末ラッパが ANSI 色を支えるのに TTY 検出を出さないときは `FORCE_COLOR=1` です。
 
 ---
 
@@ -193,20 +211,32 @@ flowchart TD
 
 ---
 
-### Initialization — automatic, no command
+### Workflow Initialization — automatic
 
-足場コマンドはありません。出荷の `dist/<harness>/` ワークスペースシェルは、あらかじめ組んであります（`.claude/` エンジンと `aidlc/spaces/default/memory/`）。エンジンは最初の `/aidlc`（または作りたいことを書いたとき）で **最初のインテントを自動作成** します。作成は Initialization の 3 ステージ（Workspace Scaffold、Workspace Detection、State Init）を、決定論的なツール呼び出し 1 回で走らせます。インテントのレコードディレクトリを `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` に作り（`audit/` シャードディレクトリ、スコープが走るフェーズごとの成果物ディレクトリ、`verification/`）、空のスペース単位 `aidlc/knowledge/` も作り、ルールベースのワークスペーススキャンを走らせ、そのインテントの `aidlc-state.md` にスコープ計画を書きます。
+手コピー導入に、足場コマンドはありません。版付きの `aidlc-runtime-X.Y.Z.tar.gz` から来る `runtime/<harness>/` シェルは、あらかじめ組んであります（`.claude/` エンジンと `aidlc/spaces/default/memory/`）。エンジンは最初の `/aidlc`（または作りたいことを書いたとき）で **最初のインテントを自動作成** します。作成は Initialization の 3 ステージ（Workspace Scaffold、Workspace Detection、State Init）を、決定論的なツール呼び出し 1 回で走らせます。インテントのレコードディレクトリを `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` に作り（`audit/` シャードディレクトリ、スコープが走るフェーズごとの成果物ディレクトリ、`verification/`）、空のスペース単位 `aidlc/knowledge/` も作り、ルールベースのワークスペーススキャンを走らせ、そのインテントの `aidlc-state.md` にスコープ計画を書きます。
 init 列のイベントを残します（`WORKFLOW_STARTED`、`WORKSPACE_SCAFFOLDED`、`WORKSPACE_SCANNED`、`WORKSPACE_INITIALISED`、ステージごとの `STAGE_STARTED` / `STAGE_COMPLETED`）。スコープを名前すると（`/aidlc --scope feature`）初期スコープの種になります。無ければ `AWS_AIDLC_DEFAULT_SCOPE` を解決し、その次の既定は `classic` です。最初の実行の前にチームナレッジやガードレールを足したいときは、出荷の `aidlc/spaces/default/memory/` を編集します。スペース単位の `aidlc/knowledge/` は、最初のインテントができたときに（空で）作られ、そこへ自由形式のファイルを足します。
+
+プロジェクトの導入と更新の本筋は、ネイティブの config コマンドです。フレームワーク開発者は、gitignore された Bun 形の `dist/` 投影を、手元で `bun scripts/package.ts` から出せます。リリース利用者は、チェックアウトからコピーしないでください。
+
+ネイティブのマシン導入では、ハーネスを開く前に一度 `aidlc config` を走らせます。同じシェルを置き、更新の基準を残します。ワークフローのインテント誕生は、最初のチャット起動でこれまでどおり自動です。
 
 歓迎メッセージは、セッション開始時に `settings.json` の `companyAnnouncements` から描画されます。
 
-**複数リポジトリのワークスペース。** ワークスペースルートに兄弟のコードリポジトリが複数あるとき（それぞれ直下の子ディレクトリで `.git` がある）、作成ステップは、インテントが触るリポジトリ集合を `intents.json` の行に残します。既定では兄弟リポジトリを **全部自動発見** します。部分集合に絞るときは、作成ツールが `--repos a,b`（リポジトリディレクトリ名のカンマ区切り）を受けます。これはエンジンが代わりに走らせる決定論的な `aidlc-utility intent-create` のフラグであり、自分で打つ `/aidlc` フラグではありません。Construction 中、各 git 操作（worktree、swarm、Bolt）はリポジトリ 1 つを対象にします。コンダクターは錨として `--repo <name>` を渡します。要るのは、インテントが複数リポジトリにまたがるときだけです。記録されたリポジトリが無いインテントは、単一リポジトリの既定（git はワークスペース／プロジェクトディレクトリで走る）です。チーム所有ユニットは、いまこの単一リポジトリ既定が必要です。`set-unit-ownership team` は、兄弟リポジトリが記録されたインテントを、状態を変える前に拒みます。[Artifacts Reference](14-artifacts-reference.md)。
+**複数リポジトリのワークスペース。** ワークスペースルートに兄弟のコードリポジトリが複数あるとき（それぞれ直下の子ディレクトリで `.git` がある）、作成ステップは、インテントが触るリポジトリ集合を `intents.json` の行に残します。既定では兄弟リポジトリを **全部自動発見** します。部分集合に絞るときは、作成ツールが `--repos a,b`（リポジトリディレクトリ名のカンマ区切り）を受けます。これはエンジンが代わりに走らせる決定論的な `aidlc-utility intent-create` のフラグであり、自分で打つ `/aidlc` フラグではありません。Construction 中、各 git 操作（worktree、swarm、ボルト）はリポジトリ 1 つを対象にします。コンダクターは錨として `--repo <name>` を渡します。要るのは、インテントが複数リポジトリにまたがるときだけです。記録されたリポジトリが無いインテントは、単一リポジトリの既定（git はワークスペース／プロジェクトディレクトリで走る）です。チーム所有ユニットは、いまこの単一リポジトリ既定が必要です。`set-unit-ownership team` は、兄弟リポジトリが記録されたインテントを、状態を変える前に拒みます。[Artifacts Reference](14-artifacts-reference.md)。
 
 ---
 
 ### `/aidlc intent [name]` — List or switch intents
 
-素の `/aidlc intent` は、アクティブスペースのインテントを列挙します。構造化出力は `--json` です。`/aidlc intent <name>` は、曖昧でない slug、またはレコードディレクトリのフル名で、既存インテントへユーザー単位のアクティブインテントカーソルを切り替えます。インテントを作らず、ワークフローも進めません。
+素の `/aidlc intent` は、アクティブスペースの進行中と完了のインテントを列挙します。`--json` は構造化出力（全行。アーカイブ済みも含む）。人が読む一覧にアーカイブ済みを出すのは `--all` です。`/aidlc intent <name>` は、曖昧でない slug、またはレコードディレクトリのフル名で、既存インテントへユーザー単位のアクティブインテントカーソルを切り替えます。インテントを作らず、ワークフローも進めません。
+
+### `/aidlc intent archive <name>` — Retire an intent you will not finish
+
+`/aidlc intent archive <name> [--reason "<text>"]` は、進行中のインテントを末端の `archived` 状態へ移します。何も消しません。レコードディレクトリ、成果物、監査シャードはその場所のままです。アーカイブ自体は、そのインテントの監査証跡に `WORKFLOW_ARCHIVED` として残ります（`--reason` を付けたときはそれも）。レジストリ行は `archived` に、状態ファイルの `Status` は `Archived` に変わり、既定の `/aidlc intent` 一覧からは隠れます。アーカイブしたインテントがアクティブだったときは、ユーザー単位のカーソルを消します。次の `/aidlc` は、引退したステージを再開せず、どのインテントをやるかを聞く（残っていなければ新しい仕事を作る）ようになります。
+
+完了済みインテント（すでに末端）、まだ生きているボルト worktree があるインテント、claim 済みユニットがあるチーム所有インテントは、アーカイブを拒みます。ほかのチェックアウトで仕事が走っているためです。
+
+`/aidlc intent unarchive <name>` はそれを戻します。行は `in-flight` に、`Status` は止まったステージの `Running` に戻り、`WORKFLOW_UNARCHIVED` が残ります。カーソルは動かしません。続けたいときは `/aidlc intent <name>` で復活したインテントへ切り替えます。
 
 ### `/aidlc space [name]` — List or switch spaces
 
@@ -219,7 +249,7 @@ init 列のイベントを残します（`WORKFLOW_STARTED`、`WORKSPACE_SCAFFOL
 
 ### `/aidlc knowledge <verb>` — Index and read your own documents
 
-文書 — PDF、Word、Markdown、プレーンテキスト — を `aidlc/spaces/<space>/knowledge/documents/` の下へ、好きな整理で置き、索引します。エージェントは推測せず、そこを引用できます。何かと使い方は [DocumentKB](documentkb.md) です。
+文書 — PDF、Word、Markdown、プレーンテキスト — を `aidlc/spaces/<space>/knowledge/documents/` の下へ、好きな整理で置き、索引します。エージェントは推測せず、そこを引用できます。
 
 | Command | What it does |
 |---|---|
@@ -262,7 +292,7 @@ init 列のイベントを残します（`WORKFLOW_STARTED`、`WORKSPACE_SCAFFOL
 /aidlc --status
 ```
 
-**動き:** アクティブインテントの `aidlc-state.md` を読み、いまのフェーズ、いまのステージ、完了／総ステージ数、スコープ、深度、ステージ進捗一覧を出します。完了ステージの検証レシートも見て、現在、ドリフト、再検証、未追跡、利用不可を報告します。所見は助言であり、ルーティングは変えません。いまのステージが承認待ちなら、ゲートが開いた時刻と、おおよその待ち時間も出します。ワークフローが無ければ、進行中のワークフローは無いと出します。
+**動き:** アクティブインテントの `aidlc-state.md` を読み、いまのフェーズ、いまのステージ、完了／総ステージ数、スコープ、深度、インテントの Change Control 値とその出自（`Change Control: strict (from project.md)`、`relaxed (from scope classic)`、`strict (set by you)`、または欄の無い古いインテント向けの `strict (not set)`）、ステージ進捗一覧を出します。壊れた Change Control 欄は、検証エラーと直しコマンド付きで利用不可と出します。完了ステージの検証レシートも見て、現在、ドリフト、再検証、未追跡、利用不可を報告します。所見は助言であり、ルーティングは変えません。いまのステージが承認待ちなら、ゲートが開いた時刻と、おおよその待ち時間も出します。ワークフローが無ければ、進行中のワークフローは無いと出します。
 
 `Unit Ownership: team` のときは、スコープ無しの main が出すのと同じ盤を、ラベル付きの **Team Construction Snapshot** として足します。Unit Progress、ローカルで見た claim ref（owner、generation、push 時刻ではなく観測した動き）、pin 済みマージの準備、claim できるユニット、ブロッカーです。スコープ付きもスコープ無しも、同じ盤を描画します。コマンドは fetch せず、状態、キャッシュ、監査も変えません。明示の `--space` と `--intent` セレクタは、見出し、Unit DAG、claim、マージ日誌を、選んだ同じ身元へ結びます。盤の末尾は、空いている／解放された仕事の claim、pin 済みマージゲートの記録、`aidlc unit land` の再開、の具体的な次の動作です。
 
@@ -382,9 +412,19 @@ claim 登録が使えないあいだ、gate と land は閉じて失敗します
 
 ---
 
+### `/aidlc --config [section]` - In-session project configuration
+
+セッションを出ずに、`models`、`runtime`、`providers`、`trust`、`flags`、`project` のどれかを設定します。節を省略すると、コンダクターがどの節を見るか聞きます。
+
+コンダクターはいまの状態を `aidlc config <section> --show --json` で読み、会話で変更を聞き、列挙の選択にはネイティブの質問ピッカーを使います。「leave it」と言うとその節を飛ばします。受け入れた変更は、どれも正確な `aidlc config <section> <explicit value flags> --yes` 1 本で着地します。コマンドとその出力を見せます。エイリアスは値を捏造せず、素の `aidlc config --yes` も走らせません。
+
+これは端末の設定作業です。変更が着地したあと、または断ったあと、コンダクターは止まります。`next` も、進行も、再開も、ワークフローステージも走らせません。
+
+---
+
 ### `/aidlc --doctor` — Health check
 
-この実装の前提、設定、ステージグラフの整合が揃っているかを検証します。全部通れば exit 0、どれか落ちれば 1。報告の全文はどちらでも stdout に出るので、オーケストレータはどちらでも表面化できます。コアの doctor 検査は **読み取り専用** です。インテントがまだ無い新しいシェル（`audit/` シャード無し）ではファイルを作らないので、最初のインテントの前に走らせて構いません。インテントがあると `HEALTH_CHECKED` 監査行を残します。プラグイン検査は、導入済みプラグインコードを実行します。作者の規約ではそれらのスクリプトは読み取り専用ですが、ランタイムはその性質を強制できません。
+この実装の前提、設定、ステージグラフの整合が揃っているかを検証します。きれいな報告と警告だけの報告は exit 0。落ちた検査は exit 1。報告の全文はどちらでも stdout に出るので、オーケストレータはどちらでも表面化できます。コアの doctor 検査は **読み取り専用** です。インテントがまだ無い新しいシェル（`audit/` シャード無し）ではファイルを作らないので、最初のインテントの前に走らせて構いません。インテントがあると `HEALTH_CHECKED` 監査行を残します。プラグイン検査は、導入済みプラグインコードを実行します。作者の規約ではそれらのスクリプトは読み取り専用ですが、ランタイムはその性質を強制できません。
 
 ワークフローに問題があると、`--doctor` は **Workflow diagnosis** セクションも出し、構造化した所見（例: `gate-unresolved`、`runtime-graph-stale`）を列挙します。未解決ゲート、古いか無いランタイムグラフ、冷えたフックなど、「進まない」原因です。ライブ報告と `--export` は分析を共有するので、所見はどちらでも同じです。
 
@@ -398,7 +438,9 @@ claim 登録が使えないあいだ、gate と land は閉じて失敗します
 
 | Check | What it validates |
 |-------|-------------------|
-| Prerequisites | `bun` が入っており PATH にある |
+| Prerequisites | 自己完結のバイナリ。またはコピー導入なら PATH 上の `bun` |
+| Installed runtime | バイナリ経路のとき、アクティブなマシン版と、導入済みハーネス配布 |
+| Project stamp | 選んだエンジンと比べた、プロジェクトの配布／版 |
 | Hook presence | `settings.json` が配線するフックすべて（`hooks` ブロックと `statusLine` コマンド — フレームワークフック 17 本）が `.claude/hooks/` にある。配線されているのに無いフックは大きく失敗する。期待する一覧を `settings.json` から取るので、そこにフックを足せば自動で検査対象になる |
 | Hooks enabled (Claude Code) | Claude Code の設定層をまたいで、解決値が `disableAllHooks: true` ではない（エンタープライズ管理ファイルとアルファベット順の `managed-settings.d/` 断片 → `.claude/settings.local.json` → `.claude/settings.json` → `~/.claude/settings.json`。いちばん優先度の高い定義が勝つ）。解決された `true` は、あるフックを全部黙って飛ばすので、大きく失敗し、層を名指しする |
 | Project structure | `.claude/settings.json` がある（ファイルの有無だけ。中身は検証しない） |
@@ -409,6 +451,7 @@ claim 登録が使えないあいだ、gate と land は閉じて失敗します
 | Claude managed hook policy | Claude ハーネスだけ。既存の管理設定リゾルバ（`AIDLC_MANAGED_SETTINGS_PATH`、現行と古い Windows パス、macOS、Linux/WSL）とアルファベット順の `managed-settings.d/` 断片を使い、実効の `allowManagedHooksOnly` が `true` なら失敗する |
 | Human-turn receipts | ステージ／ゲートイベントがあるのに監査に `HUMAN_TURN` が無いとき、在席ゲートのチェックポイントが拒否すると advisory で通過して報告する |
 | Hook drops | `.aidlc-hooks-health/<hook>.drops` テレメトリがあれば出す — フックがツール呼び出しを壊さないために飲み込んだ失敗を、フックごとのドロップ数と最終時刻、直し方（見てからファイルを消す）付きで。advisory — 失敗にはしない |
+| Workspace source boundary binds | ワークフロー状態があるときだけ。Plan Approval が計画を結ぶのと同じワークスペースソース走査を走らせる。指紋の先頭 12 文字（16 進）で合格。失敗は理由コードとパスを名指しする（例: `budget-entries at .`、`dangling-symlink at linked/src`、`excluded-path at node_modules/pkg`）。直し文: 問題のパスを縮めるか除外する、除外ディレクトリ下の本物のソースを `.aidlc-source-paths.json` で宣言する、壊れたシンボリックリンクを外す、それから指紋コマンドを再実行。最後の手段は、人が `Override Plan Approval: <reason>` と打つ |
 | State drift | アクティブインテントの `aidlc-state.md` が、監査の最後の `WORKFLOW_COMPLETED` と一致する |
 | Pending approval | いまのステージが有機の承認ゲートで 24 時間超待っているとき、stuck ではなく人待ちと識別し、`/aidlc --status` を指す（advisory — 失敗にはしない） |
 | Background subagents | `aidlc/.aidlc-subagent-inflight` の、新しい／古いセッション単位エントリを報告する。新しいエントリは advisory。古い、または壊れたエントリは、正確な削除案内付きで失敗する。無ければ何も出さない |
@@ -416,6 +459,7 @@ claim 登録が使えないあいだ、gate と land は閉じて失敗します
 | Orphan stage files | グラフの各 slug に、ディスク上の対応 `<phase>/<slug>.md` がある |
 | Uncompiled stage files | コンパイル済みグラフに slug が無い、ディスク上のステージ `.md` を出す。プラグイン所有は `plugin sync` を名指しし、ほかの書いたステージは `aidlc-graph.ts compile` を名指しする（advisory、失敗にはしない） |
 | Plugin selection | 有効プラグイン一覧、プラグインごとの有効ステージ数、フルグラフの `enabled:false` フラグの一致、壊れた選択の復旧ヒント |
+| Plugin composition | オフラインの導入済み対 compose 済みの版／ハッシュ状態。sync または修理の対処を含む |
 | Composed plugin surface | 有効なプラグイン所有ステージファイルがコンパイルされている。有効プラグインの寄与サイドカーがすべて読め、妥当。記録されたターゲットステージがすべて存在し、記録された構造追加と散文断片が残っていて変わっていない |
 | Plugin checks | 有効プラグインだけ、任意の `tools/<plugin>-doctor.ts` を走らせる。error 所見は doctor を失敗させ、advisory 所見は exit code を変えずに見え、export される |
 | Scope validation | 有効なスコープすべて（プラグイン選択後の `.claude/scopes/*.md`）が問題なく辿れる（スコープ短縮ギャップの advisory は想定どおり） |
@@ -432,34 +476,29 @@ claim 登録が使えないあいだ、gate と land は閉じて失敗します
 **出力例:**
 
 ```
-✓ bun installed (required for CLI tools and hooks)
-✓ aidlc-write-audit-log.ts present
-✓ aidlc-sync-workflow-state.ts present
-✓ aidlc-validate-state.ts present
-✓ aidlc-log-subagent.ts present
-✓ aidlc-session-start.ts present
-✓ aidlc-session-end.ts present
-✓ aidlc-statusline.ts present
-✓ settings.json present
-✓ AWS_AIDLC_DEFAULT_SCOPE (unset — no project default)
-✓ workspace shell ready (.claude/ + aidlc/spaces/default/memory/)
-✓ Submodules: no .gitmodules at workspace root
-✓ Hook heartbeats: not yet fired (first workflow stage will populate)
-✓ Hook drops: none recorded
-✓ State matches last audit event (no drift)
-✓ Cycle detection: 0 cycles
-✓ Orphan stage files: 33 graph entries all have files
-✓ Uncompiled stage files: 0 stage files missing from the compiled graph
-✓ Enabled plugins: all enabled (no selection); enabled stage counts: aidlc=33
-✓ Composed plugin surface: all enabled plugin stages and recorded contributions are present
-✓ Scope validation: 11 scopes valid
-✓ Schema validation: 33/33 stages valid
-✓ Graph references: 122 artifacts + edges resolved
-✓ Duplicate producers: every consumed artifact has a single producer
-✓ Keyword overlap: no conflicts
-✓ Rule drift: no team/project rule overlaps org policy
-✓ Paired sensor coverage: no sensor-bound rules (0 feedforward-only)
+AI-DLC doctor
+
+Machine
+  warn  Runtime hook PATH: bun is interactive-only at /home/user/.bun/bin/bun
+        fix: Install Bun, then add ~/.bun/bin to the login-independent environment used by the harness, not only .zshrc or .bash_profile.
+  warn  Update: update check unavailable while offline
+        fix: run `bun .claude/tools/aidlc.ts update --check`
+  ok    4 checks passed
+
+Project (.claude, Claude Code)
+  warn  Instruction file: block or file missing (.claude/CLAUDE.md)
+        fix: run `bun .claude/tools/aidlc.ts config`
+  ok    43 checks passed
+
+Framework integrity
+  ok    all 12 checks passed
+
+0 problems, 3 warnings.
+Warnings are advisory - if everything works, ignore them.
+Run 'bun .claude/tools/aidlc.ts doctor --verbose' to see every check.
 ```
+
+`--verbose` は、Machine、Project、グラフ、スキーマ、ステージ、スコープ、センサーの各行を全部広げます。警告も失敗も、あとに `fix:` の動作が付きます。
 
 ---
 
@@ -529,7 +568,7 @@ slug または番号で、指定ステージへ直接ジャンプします。
 
 ### `/aidlc --stage <slug> --single` — Run one stage in isolation
 
-`--single` を足すと、メインのワークフローを触らず、1 ステージだけを走らせます。ステージは走り、成果物を書き、止まります。ワークフローの `Current Stage` は進みません。隔離はエンジンが強制し、慣習ではありません。方法論の一片（要件分析、リバースエンジニアリングのスキャン）だけを当て、フルライフサイクルにはコミットしないときに使います。隔離実行でも、そのステージに設定したエージェントとレビュアーは使いますが、ワークフローの学びは走らず、ワークフロー承認も聞きません。合成の完了は監査ログに残り、コマンドはそこで止まります。Reverse Engineering の条件と成果物は [Reverse Engineering と CodeKB](codekb.md) です。
+`--single` を足すと、メインのワークフローを触らず、1 ステージだけを走らせます。ステージは走り、成果物を書き、止まります。ワークフローの `Current Stage` は進みません。隔離はエンジンが強制し、慣習ではありません。方法論の一片（要件分析、リバースエンジニアリングのスキャン）だけを当て、フルライフサイクルにはコミットしないときに使います。隔離実行でも、そのステージに設定したエージェントとレビュアーは使いますが、ワークフローの学びは走らず、ワークフロー承認も聞きません。合成の完了は監査ログに残り、コマンドはそこで止まります。
 
 ```
 /aidlc --stage requirements-analysis --single
@@ -647,7 +686,7 @@ slug または番号で、指定ステージへ直接ジャンプします。
 /aidlc --review none
 ```
 
-**動き:** レビュアー付きのステージは、frontmatter でレビュークラスを宣言します。`adversarial`（レビュアーが成果物を論駁し、リードが所見を最大 `reviewer_max_iterations` 回まで直す）か `advisory`（通常フローのレビュー 1 回。所見は承認ゲートで一字一句引用され、人が振り分ける）です。ステージごとの実効クラスは、ステージの宣言、スコープの `review_cap`（bugfix、poc、classic、workshop は `advisory` まで。express は `none`）、この上書き、のいちばん低いものです。だから `--review advisory` は残っている adversarial ループを、通常フローの意思決定支援 1 回に変え、`--review none` はレビュアーのディスパッチ自体を飛ばし、`--review adversarial` は上書きを消します（ステージ宣言やスコープ上限より上には上げられません）。自律スウォームの Construction は例外です。Bolt の中ではレビュアーがマージ前の唯一の検証なので、宣言クラスが常に効きます。`aidlc-state.md` の `Review Override` 欄を更新し、`REVIEW_CLASS_CHANGED` 監査イベントを残します。ワークフロー作成時、または `--scope` と並べて渡せます。いまと同じスコープなら、上書きを捨てず、設定変更としてレビュー上書きを効かせます。どちらのクラスでも、あとからの出力書き込みが末端レシートを無効にしたときは、次の序数で、上限付きの復旧要求が 1 回許されます。
+**動き:** レビュアー付きのステージは、frontmatter でレビュークラスを宣言します。`adversarial`（レビュアーが成果物を論駁し、リードが所見を最大 `reviewer_max_iterations` 回まで直す）か `advisory`（通常フローのレビュー 1 回。所見は承認ゲートで一字一句引用され、人が振り分ける）です。ステージごとの実効クラスは、ステージの宣言、スコープの `review_cap`（bugfix、poc、classic、workshop は `advisory` まで。express は `none`）、この上書き、のいちばん低いものです。だから `--review advisory` は残っている adversarial ループを、通常フローの意思決定支援 1 回に変え、`--review none` はレビュアーのディスパッチ自体を飛ばし、`--review adversarial` は上書きを消します（ステージ宣言やスコープ上限より上には上げられません）。自律スウォームの Construction は例外です。ボルトの中ではレビュアーがマージ前の唯一の検証なので、宣言クラスが常に効きます。`aidlc-state.md` の `Review Override` 欄を更新し、`REVIEW_CLASS_CHANGED` 監査イベントを残します。ワークフロー作成時、または `--scope` と並べて渡せます。いまと同じスコープなら、上書きを捨てず、設定変更としてレビュー上書きを効かせます。どちらのクラスでも、あとからの出力書き込みが末端レシートを無効にしたときは、次の序数で、上限付きの復旧要求が 1 回許されます。
 
 **有効な値:** `adversarial`、`advisory`、`none`（大文字小文字は問わない）。
 
@@ -657,6 +696,30 @@ slug または番号で、指定ステージへ直接ジャンプします。
 /aidlc --review advisory              Single normal-flow pass, findings at the gate
 /aidlc --review none                  No stage reviews this run
 /aidlc --review adversarial           Clear the override (stage defaults apply)
+```
+
+---
+
+### `/aidlc --change-control <value>` - Change Control for this piece of work
+
+インテントの Change Control 値をセットします。人がすでに承認または確認したものの下が、あとから変わったときに何をするかです（コード計画の承認後にソースが動いた、レビュー後に文書が編集された、いまの要約確認なしに出力が保存された）。
+
+**構文:**
+
+```
+/aidlc --change-control strict
+/aidlc --change-control relaxed
+```
+
+**動き:** `strict` は承認を開き直します。実行は、何が変わったかを平文で名前して止まり、もう一度承認を求めます。`relaxed` は変化を `CHANGE_ACCEPTED` 監査行として一度記録し、1 行で伝え、続けます。どちらもゲートは外しません。承認の問いはどれも聞き、レビュアーの判定は変えません。裏では `aidlc-utility.ts change-control <value>` を走らせ、`aidlc-state.md` の `Change Control` 行を書き直します（値はインテントと一緒にコミットされ、セッションを越え、チームメイトにも見えます）。`CHANGE_CONTROL_SET` 監査イベントを残します。同じコマンドが壊れた行を直し、古い文を残します。平文のチャット依頼（「ファイルが変わっても再承認を聞かないで」）も同じコマンドを走らせます。行の無い古いインテントは、このコマンドがセットするまで strict のままです。新しいインテントはスコープの既定から始まります。メモリ層の `## Change Control` が `Mode: strict` なら、コマンドは拒否してそのファイルを名指しします。みんな向けに変えるなら、そこの行を編集します。作成時はスコープと並べてフラグを渡せます（`/aidlc --scope poc --change-control strict "..."`）。
+
+**有効な値:** `strict`、`relaxed`。
+
+**例:**
+
+```
+/aidlc --change-control relaxed        Record and announce input changes, keep going
+/aidlc --change-control strict         Approve again whenever an approved input changes
 ```
 
 ---
@@ -687,21 +750,30 @@ slug または番号で、指定ステージへ直接ジャンプします。
 
 ## 決定論的 CLI ツール
 
-上の `/aidlc` フラグのほかに、この実装は Bun/TypeScript ツールをいくつか出荷します。フックとステージプロトコルが、ワークフロー実行中に呼びます。手で打つことはほとんどありませんが、どれもデバッグの取っ手になります。
+ネイティブのディスパッチャは、利用者操作向けの安定した公開経路を出します。版付きリリースランタイムはその経路を使います。手元で生成したソース投影は、同じ操作をハーネスディレクトリ下の Bun/TypeScript ツールで実装します。公開経路の無い配管では、直接のツール呼び出しがまだ役に立ちます。下に経路が書いてあるときは `aidlc` を使ってください。
 
-呼び方は `bun <harness-dir>/tools/<tool>.ts <subcommand>` です。`<harness-dir>` は Claude Code では `.claude`、Kiro CLI と Kiro IDE では `.kiro`、Codex CLI では `.codex` です。
+### `aidlc engine bolt set-autonomy` - change Construction approvals
 
-### `aidlc-utility codekb-path` - resolve the code knowledge directory
-
-これは **直接のユーティリティ呼び出し** であり、`/aidlc codekb-path` コマンドではありません。
+Construction 中、打ったメッセージで「残りは自律で進めて」または「ここから各ステージをゲートして」と頼むことができます。どちらも skeleton-on でも `skeleton: off` でも動きます。skeleton-off には自動のラダープロンプトはありません。コンダクターは明示の選択を次で残します。
 
 ```bash
-bun .claude/tools/aidlc-utility.ts codekb-path --repo <repo>
-bun .kiro/tools/aidlc-utility.ts codekb-path --repo <repo>
-bun .codex/tools/aidlc-utility.ts codekb-path --repo <repo>
+aidlc engine bolt set-autonomy --mode autonomous
+aidlc engine bolt set-autonomy --mode gated
 ```
 
-アクティブスペースの決定論的な `aidlc/spaces/<space>/codekb/<repo>/` パスを出します。`--json` を足すと `{space, repo, dir}` です。問い合わせは何も書かず、ディレクトリも作らず、監査イベントも出しません。Reverse Engineering ステージの散文が直接呼ぶので、パスを手で組み立てません。ストアの役割と 9 成果物は [Reverse Engineering と CodeKB](codekb.md) です。
+どちらも `aidlc-state.md` の `Construction Autonomy Mode` を更新し、`AUTONOMY_MODE_SET` を出します。`autonomous` の付与には新しい人のターンが要ります。`gated` へ戻すと、あとの人の承認が復活し、新しいターンは要りません。
+
+既定の stage-major ウォークでは、自律はあとの適格な Construction 完了承認を飛ばします。スコープ内の最初の Construction ステージは、自律を先に付与していても、そのステージ自身の人の承認が要ります。各ユニットの Code Generation Plan Approval も必須のままです。既存の unit-major 実行は直列のまま、スウォームを抑え、ユニットごとステージの人のゲートを残します。ラダーと失敗時の規則は [Construction Execution](../reference/03-orchestrator.md#construction-execution) です。
+
+### `aidlc engine workspace codekb` - resolve the code knowledge directory
+
+公開の読み取り専用照会です。
+
+```bash
+aidlc engine workspace codekb --repo <repo>
+```
+
+アクティブスペースの決定論的な `aidlc/spaces/<space>/codekb/<repo>/` パスを出します。`--json` を足すと `{space, repo, dir}` です。問い合わせは何も書かず、ディレクトリも作らず、監査イベントも出しません。Reverse Engineering ステージの散文が同じ経路を呼ぶので、パスを手で組み立てません。
 
 ### `aidlc-utility codekb-snapshot` - bind a scan to source and store generations
 
@@ -757,10 +829,7 @@ bun .claude/tools/aidlc-utility.ts codekb-scope-diff --repo <repo> --mint --path
 これは **直接のツール呼び出し** であり、`/aidlc workspace-sync` コマンドではありません。複数リポジトリのワークスペースを、ワークスペースルートの任意の `repos.json` マニフェストと突き合わせます（[Declaring the repo set](03-spaces-and-intents.md#declaring-the-repo-set-optional-manifest)）。
 
 ```bash
-bun .claude/tools/aidlc-workspace-sync.ts [--force]
-bun .kiro/tools/aidlc-workspace-sync.ts [--force]
-bun .codex/tools/aidlc-workspace-sync.ts [--force]
-bun .aidlc/tools/aidlc-workspace-sync.ts [--force]
+aidlc system workspace-sync [--force]
 ```
 
 突き合わせはワークスペースロックで直列化します。生きている所有者は経過時間では刈りません。クローンと生成ファイルを置く前に、読み取り専用の事前確認を走らせます。生成物は no-replace リンクと、同じファイルシステム上の可逆リネームで入れます。ステージ中に `.gitignore` または `aidlc.code-workspace` が変わった、あるいは計画を読んだあとに `repos.json` が変わったときは、古い状態を当てたり編集を上書きしたりせず中止します。置き換えに成功した以前の生成ファイルは、gitignore された `.aidlc-workspace-sync-recovery-*` ディレクトリに残り、見られます。ツールは `repos.json` に宣言されてディスクに無いリポジトリを clone し、ワークスペース `.gitignore` の管理ブロックをリポジトリごとに `/{name}/` 1 行へ書き直し、ルートと各子リポジトリを列挙する `aidlc.code-workspace` の VSCode マルチルートファイルを書きます。宣言した `branch` は新規 clone のチェックアウト先です。すでにディスクにあるリポジトリは再 clone も切り替えもしません。そこでの不一致は advisory のままです。
@@ -771,7 +840,7 @@ bun .aidlc/tools/aidlc-workspace-sync.ts [--force]
 
 マニフェストは任意で、ディスクを上書きしません。インテント作成は、実際にある兄弟リポジトリをこれまでどおり自動発見します。このツールは宣言集合を再現し、整えるだけです。`--doctor` はこれについて advisory 行を 3 つ持ちます（未コミットの `aidlc/` 記録、`repos.json` とディスクのドリフト、古い管理 `.gitignore` ブロック）。advisory 行はどれも doctor の exit code を変えません。
 
-### `aidlc-utility select-plugins` - install plugin selection
+### Plugin state
 
 `/aidlc plugin list` は導入済みプラグイン名と、それぞれが有効かを出します。`/aidlc plugin select [names]` が公開コマンドです。`select-plugins` はその直接ユーティリティ形であり、`/aidlc select-plugins` コマンドではありません。`bun .claude/tools/aidlc-utility.ts select-plugins` はいまの選択（`plugins` キーが無ければ `all enabled (no selection)`）と、知っているプラグイン名を出します。セットするにはカンマ区切りの一覧を渡します。
 
@@ -788,7 +857,7 @@ bun .claude/tools/aidlc-utility.ts select-plugins aidlc,test-pro
 
 ### `aidlc-utility recompose` - in-flight plan flips
 
-`bun .claude/tools/aidlc-utility.ts recompose --skip <slugs> --add <slugs>`（カンマ区切り）は、生きている状態ファイル上で、PENDING かつカーソルより先のステージの計画接尾辞を反転します。監査ロックの下で走り、残るステージが必須入力を失う反転（および完了／進行中ステージの反転、カーソルより後ろのステージ、Construction の最初の EXECUTE ステージ — walking-skeleton の錨 — をどちら向きにも動かす反転、Status が Running ではないワークフローへの recompose、自律 Construction 下の recompose — 計画の形を変えるにはゲートに人が要るので、先に gated へ切り替えるかスウォームの完了を待つ）を拒み、導出状態フィールドを組み直し、`RECOMPOSED` を出します。普通はワークフロー途中の `/aidlc compose` から届き、直接は打ちません。
+`{{INVOKE}} engine recompose --skip <slugs> --add <slugs>`（カンマ区切り）は、生きている状態ファイル上で、PENDING かつカーソルより先のステージの計画接尾辞を反転します。監査ロックの下で走り、残るステージが必須入力を失う反転（および完了／進行中ステージの反転、カーソルより後ろのステージ、Construction の最初の EXECUTE ステージ — walking-skeleton の錨 — をどちら向きにも動かす反転、Status が Running ではないワークフローへの recompose、自律 Construction 下の recompose — 計画の形を変えるにはゲートに人が要るので、先に gated へ切り替えるかスウォームの完了を待つ）を拒み、導出状態フィールドを組み直し、`RECOMPOSED` を出します。普通はワークフロー途中の `/aidlc compose` から届き、直接は打ちません。
 
 ### `aidlc-graph ars` - deterministic ARS scoring
 
@@ -802,7 +871,7 @@ bun .claude/tools/aidlc-graph.ts ars --iae 0.30 --csu 0.80 --ve 0.40 --r 0.20 --
 
 ### `aidlc-graph validate-grid` - arbitrary-grid dependency check
 
-`bun .claude/tools/aidlc-graph.ts validate-grid --proposal <path> [--strict] [--project-type <t>] [--keywords <csv>]` は、任意の `{"<stage>": "EXECUTE"|"SKIP"}` JSON グリッドを検証します。提案はコンパイル済みステージをちょうど一度ずつ名前しなければなりません。欠けたステージ、未知のステージ、無効な動作はエラーです。緩いモードは `validate-scope` を映します（経路外の必須プロデューサーは advisory）。`--strict` はそれを硬く拒否します（recompose の姿勢）。`--keywords` は、付与するキーワードそれぞれを、既存スコープがすでに名乗っているキーワードと照合します。衝突は現職スコープを名指しする硬いエラーです（コンポーザーはゲート付与キーワードを書く前にこれを走らせます）。結果は `nearest_stock` も持ちます。グラフ／プラグインが書いた配布スコープすべてを、提案からのグリッド距離で並べます（`{scope, diff, differs}`、昇順）。コンポーザーが書いたスコープエントリは除外し、欠けたキーや余分なキーは差分として数えます。front / report の編成では、マッチ対独自の判断はこの最終提案結果だけに拠ります（`diff <= 2` かつ互換の深度）。モデルの数え直しや、前段の機械的 ARS スクリーンには拠りません。進行中の再編成では順位は助言で、走っているスコープと計画は残します。無効のときだけ exit 1。JSON 結果は stdout です。
+`bun .claude/tools/aidlc-graph.ts validate-grid --proposal <path> [--strict] [--project-type <t>] [--keywords <csv>] [--change-control <strict|relaxed>]` は、任意の `{"<stage>": "EXECUTE"|"SKIP"}` JSON グリッドを検証します。提案はコンパイル済みステージをちょうど一度ずつ名前しなければなりません。欠けたステージ、未知のステージ、無効な動作はエラーです。緩いモードは `validate-scope` を映します（経路外の必須プロデューサーは advisory）。`--strict` はそれを硬く拒否します（recompose の姿勢）。`--keywords` は、付与するキーワードそれぞれを、既存スコープがすでに名乗っているキーワードと照合します。衝突は現職スコープを名指しする硬いエラーです（コンポーザーはゲート付与キーワードを書く前にこれを走らせます）。`--change-control`（または `stages` の隣の `changeControl` メンバ）は、コンポーザーが提案した Change Control 値を見ます。`strict` でも `relaxed` でもなければエラーです。メモリ層の `Mode: strict` の下での `relaxed` 提案は、そのファイルを名指しして拒否します。受け入れた値は `change_control` として返します。結果は `nearest_stock` も持ちます。グラフ／プラグインが書いた配布スコープすべてを、提案からのグリッド距離で並べます（`{scope, diff, differs}`、昇順。コンポーザーが書いたスコープは除外）。コンポーザーのマッチ対独自の判断は、LLM の数え直しではなく、検証器の数字です。
 
 ### `aidlc-sensor` — inspect and fire Sensors
 
@@ -850,6 +919,32 @@ bun .claude/tools/aidlc-runtime.ts read requirements-analysis
 ```
 
 `runtime-graph.json` は gitignore されます。成果物の形は [Artifacts Reference](14-artifacts-reference.md)、フルスキーマは [Runtime Graph](../reference/13-runtime-graph.md) のリファレンス章です。
+
+### `aidlc attest` — commit provenance
+
+「このコミットの変更は、どのレビュー済み作業単位の所有か。コミットした中身は、レビュアーが承認したものとまだ一致するか」に答えます。帰属はコミット済みの中身だけから導きます — `audit/` シャードのレビューレシートと、コミット済みの `reviewed-source-*.tsv` 証拠ファイル。チェックアウトではなく git ツリーから読むので、普通の手作業 `git commit`、どの clone でも、フック無し、コミットメッセージのトレーラ無し、push した ref 無しで動き、同じコミットはいつも同じ解決になります。
+
+| Subcommand | What it does |
+|------------|--------------|
+| `resolve [<commit>]` | 読み取り専用。コミットの first-parent 差分（既定 `HEAD`）をレビュー済みユニットへ帰属し、変わったパスごとに分類する。`verified`（コミットした中身がレビュー済みと等しい）、`drifted`（レビュー済みだがその後編集）、`unattested`（どのユニットも名乗らない）、`unverifiable`（証拠が無い、改ざん、または gitignore されたローカルスナップショットだけ — 閉じて失敗）、`indeterminate`（レシートが曖昧 — 閉じて失敗）、`excluded`（フレームワークのシェル／記録パス — 範囲のベースツリーですでに確立したハーネスシェル。変更が持ち込んだマニフェストや、このチェックアウトにだけ入れたシェルではない）。JSON 報告は stdout。位置引数のフラグ形として `--commit <rev>` も受ける |
+| `resolve --diff <base>..<head>` | 任意範囲に同じ分類（`...` は merge-base。マージリクエストの意味と同じ） |
+| `resolve … --fail-on drifted,unattested,unverifiable,indeterminate` | 名前した状態のどれかにパスが当たると exit 3 — ゲート形。4 つの任意部分集合を受ける。**未検証パスを通す意図が無いなら 4 つ全部を名前する** — `unverifiable` を省くと、レビュー済み中身を誰も確かめられないパスが通る |
+| `resolve … --record-ref <ref>` | レシートと証拠を、検査対象コミットではなく `<ref>` のツリーから読む。変更が書けない ref（保護ブランチ、記録専用 ref）へ向けると、変更が自分の承認を供給できない |
+| `resolve … --require-trust <level>` | 報告自身の根拠が `informational` \| `reproducible` \| `independent` \| `signed` に届かなければ exit 3（`signed` は、判定が拠る入力すべて — 依拠した各レシートの監査シャードと、それが選ぶ証拠ファイル — が署名付きコミットで届いた、という意味）。報告はどれも、到達した段とその理由を `trust` オブジェクトで持つ |
+| `anchor [--commit <rev>]` | コミットがレビュー済み主張を着地させた、という `SOURCE_COMMITTED` 監査行を追記する。補強だけ — `resolve` はアンカーを読まないので、アンカーの無い手作業コミットが失うものは無い。既定は明示。セッション開始時に最近のコミットも掃くなら `AIDLC_SESSION_ANCHOR=1` |
+| `anchor --reconcile [--max-commits <n>]` | first-parent 履歴（既定 100 コミット）を掃き、帰属できるコミットのアンカーを埋める。すでにアンカー済みとスウォームマージ済みは飛ばし、帰属できないものは報告する |
+
+```
+# Gate a branch: three-dot (merge-base) range, all four failable statuses,
+# receipts read from a ref the branch cannot write
+bun .claude/tools/aidlc-attest.ts resolve --diff origin/main...HEAD \
+  --record-ref origin/aidlc-records --require-trust independent \
+  --fail-on drifted,unattested,unverifiable,indeterminate
+```
+
+そのレシピで効くかどうかは、次の三点です。`...`（ドット 3 つ）を使うこと。`origin/main..HEAD` は *先端同士* の差分なので、分岐点のあと `origin/main` に着地したものが、このブランチの変更として出て誤失敗します。履歴を十分 fetch すること — 浅いチェックアウト（`actions/checkout` の既定は depth 1）には境界の親コミットが無く、`resolve` はツリー全体を黙って分類せずエラーにします。`fetch-depth: 0` をセットします。そして *報告* なのか *強制* なのかを意図して決めること。`--record-ref` が無いと、自分のレシートを書く変更が自分を検証できます。報告はそう出します（`trust.level: reproducible`）が、止めはしません。信頼フラグを両方外すと、正直な informational 報告になります。
+
+どちらの動詞も `--repo <name>`（複数リポジトリインテント）、`--space <name>`、`--intent <dir>` を受けます。片方のフラグをもう片方に渡すと、無視せず拒否します。脅威模型、信頼の段、状態の意味は [Commit Provenance](../reference/20-commit-provenance.md) のリファレンス章です。
 
 ### Session skills — report on a workflow
 

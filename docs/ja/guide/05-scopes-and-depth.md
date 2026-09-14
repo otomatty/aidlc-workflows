@@ -8,7 +8,7 @@
 
 ## The 11 Core Scopes
 
-コアは名前付きスコープを 11 個配っています。それぞれがステージ集合と、既定の深度を持ちます。プラグイン導入はスコープを足せます。導入側は `bun .claude/tools/aidlc-utility.ts select-plugins <names>` で、見えるプラグインスコープを狭められます。`plugins` 選択でコアを切る（`aidlc` を省く）と、コアのスコープファイルは導入されたまま残りますが、コアを再び有効にするまで実行時スコープとしては使えません。Initialization のステージは、有効なスコープならどれでも走ります。
+コアは名前付きスコープを 11 個配っています。それぞれがステージ集合、既定の深度、既定の Change Control 値を持ちます（`enterprise`、`security-patch`、`infra` は strict。ほかは relaxed。値が何をするか、どう設定するかは [Change Control](13-customization.md#change-control)）。プラグイン導入はスコープを足せます。導入側は `aidlc engine plugin select <names>` で、見えるプラグインスコープを狭められます。`plugins` 選択でコアを切る（`aidlc` を省く）と、コアのスコープファイルは導入されたまま残りますが、コアを再び有効にするまで実行時スコープとしては使えません。Initialization のステージは、有効なスコープならどれでも走ります。
 
 ### enterprise
 
@@ -110,7 +110,7 @@
 
 ## Scope Routing Table
 
-正本は `.claude/scopes/aidlc-<name>.md`（スコープの身元）、プラグインのスコープファイル、各ステージの `scopes:` frontmatter（所属）です。コンパイル先は `.claude/tools/data/scope-grid.json`。コンパイル済みグリッドには、いまのプラグイン選択で有効なスコープだけが入ります。生きた表は `bun .claude/tools/aidlc-utility.ts scope-table`（利用者向けの一行説明は `bun .claude/tools/aidlc-utility.ts help`）。
+正本は `.claude/scopes/aidlc-<name>.md`（スコープの身元）、プラグインのスコープファイル、各ステージの `scopes:` frontmatter（所属）です。コンパイル先は `.claude/tools/data/scope-grid.json`。コンパイル済みグリッドには、いまのプラグイン選択で有効なスコープだけが入ります。生きた表は `aidlc engine gen scope-table`（利用者向けのワークフロー／スコープの一行説明は `aidlc engine orchestrate help`）。
 
 | Scope | EXECUTE / Total | Depth | Test Strategy | Use Case |
 |-------|-----------------|-------|---------------|----------|
@@ -200,7 +200,9 @@
 | "express"、"lightweight" | `express` |
 | 明示の低コンテキストフォールバック | コアが有効なら `feature`。そうでなければ、一意なら有効な唯一のプラグインの先頭スコープ |
 
-**曖昧さの解消:** 入力にスコープキーワードと、それより長い案件説明（5 語超）が両方あると、一致はたまたま扱いになり、下の compose 提案が出ます。「Fix the infrastructure monitoring dashboard」が `infra` に落ちるのを防ぎます。合わせた計画の方が適切なことが多いためです。
+**曖昧さの解消:** 5 語を超える説明は、下の compose 提案へ入るのが普通です。ただし `refactor`、`mvp`、`minimum viable`、`poc`、`proof of concept`、`CVE` の肯定一致は、長さに関係なくそのスコープを提案します。例: "refactor the legacy authentication module to improve maintainability" は `refactor`。`fix` や `deploy` だけの一般語は、まだ compose 提案です。
+
+免除はキーワードを全部見るので、"security vulnerability CVE-2026-12345" は、先に `security` が当たっても `security-patch` を特定できます。キーワードの直前の否定（"do not refactor"、"not a proof of concept"）では免除は発火しません。あとの肯定の言及はまだ当たります。語彙のヒューリスティックなので、提案した計画が意図に合うかは確認してください。候補が複数ならアルファベット順の先頭が勝ちます。5 語以下は、従来どおりアルファベット順のキーワード一致です。プラグイン固有のキーワードは、プラグインが独自のキーワード特異性を宣言できるまで、長さヒューリスティックのままです。
 
 キーワードがはっきり当たると、MATCHED スコープと、それが持つ儀式を一行で確認します。数字はコンパイル済みグリッドからです。
 
@@ -227,7 +229,7 @@ name a different scope, or say "compose" for a tailored plan.
 コンポーザーエージェントは仕事を読み、実装エントロピーの 5 成分 — インテントの曖昧さ、コードベース構造の不確かさ、検証エントロピー、リスク、未解消の前提 — を見積もり、最小で足りるワークフローを組ます。成果に必要な成果物は全部出る、いちばん薄い EXECUTE / SKIP グリッドです。構造の見積もりは、CodeKB MCP が設定され索引済みなら、そのコールグラフとコンポーネント分析に拠ります（任意の外部ツール。AI-DLC 同梱ではない）。無ければ、範囲付きワークスペーススキャン（brownfield / greenfield、言語）に落ちます。ゲートで見る提案には、スコア内訳（成分ごとに LOW / MED / HIGH 帯と根拠）、助言の合成値、ステージごとの決定表（EXECUTE / SKIP すべてに理由）が付きます。承認、編集、却下。明示の承認まで、何も書かず、ワークフローも始まりません。承認すると:
 
 - 提案が配布スコープに MATCHED なら、AI-DLC はそのスコープでワークフローを直接作ります（コード水準の所見が多いスキャンレポートは、だいたいこの道で `bugfix` か `security-patch` に落ちます）。
-- CUSTOM グリッドなら、コンポーザーが本物のスコープ（`scopes/aidlc-<name>.md` と `scope-grid.json` の 1 行）を書き、同じターンで AI-DLC がそのスコープのワークフローを作ります。compose したスコープは、そのあと配布スコープと同じ解決です（`/aidlc --scope <name>`）。グラフ再コンパイルも生き延びます。`aidlc-graph.ts compile` は、ステージ frontmatter だけからグリッドを作り直すのではなく、compose したグリッド行を再生成した `scope-grid.json` に折り込みます。
+- CUSTOM グリッドなら、コンポーザーが本物のスコープ（`scopes/aidlc-<name>.md` と `scope-grid.json` の 1 行）を書き、同じターンで AI-DLC がそのスコープのワークフローを作ります。compose したスコープは、そのあと配布スコープと同じ解決です（`/aidlc --scope <name>`）。グラフ再コンパイルも生き延びます。`aidlc engine graph compile` は、ステージ frontmatter だけからグリッドを作り直すのではなく、compose したグリッド行を再生成した `scope-grid.json` に折り込みます。
 - 画面／レポートの提案には、空でない `creationDescription` が付きます。compose 依頼に仕事の文があれば、その文そのもの。レポートだけ、または仕事文が無い提案は、承認した所見／計画から導きます。同じターンの作成は、リテラル `--` 区切りのあと、シェル安全な argv 値 1 つとして渡します（シェルに出すときは POSIX の単引用符）。状態の Project 欄とインテントレコードの slug は、シェルメタ文字を含む説明や、フラグで始まる説明も保ちます。compose 承認は、スコープだけで説明無しでは進めません。
 
 **CodeKB への接地（任意）:** CodeKB は外部 MCP サーバです。コードベースの事前計算した構造分析（コールグラフ、コンポーネント一覧、パッケージ間結合）を出します。AI-DLC は同梱も必須もしません。無ければコンポーザーは、範囲付きワークスペーススキャンから構造を採点します。それが普通の道です。つなぐと、コンポーザーはそれを構造根拠の唯一の源にし、提案で引用します（`method: codekb`）。つなぎ方はハーネス次第です。Claude Code ではプロジェクトの `.mcp.json` にサーバを足す（サブエージェントはセッションの MCP を継ぐ）。Codex では `config.toml` に `mcp_servers` を足す。opencode では opencode 設定へ。Copilot CLI では `~/.copilot/mcp-config.json`、VS Code では `.vscode/mcp.json`。Kiro CLI の配布コンポーザー設定は `includeMcpJson: true` なので、CodeKB をつなぐとは `.kiro/settings/mcp.json` に足して `"disabled": true` を付けず、コンポーザーエージェントの `tools` に `@<server>` 許可を足すことです。Kiro IDE はフォールバック専用のままです。CodeKB と、フレームワーク自身の "codekb" ディレクトリ（`aidlc/spaces/<space>/codekb/`）を混同しないでください。後者は Reverse Engineering ステージが書くローカル成果物ストアで、MCP サーバとは無関係です。CodeKB 根拠があると、コンポーザーは Reverse Engineering のスキップを提案することがあります。そのとき提案は、下流がそのローカルストア無しで走ること開示しなければならず、決めるのはゲートの人です。

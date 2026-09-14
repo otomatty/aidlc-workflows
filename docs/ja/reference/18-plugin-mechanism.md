@@ -2,7 +2,7 @@
 
 > 読者: Tier 2/3（チームで入れる人、フレームワークの貢献者）。
 
-> **パスの慣例。** 以下の `<harness-dir>/` = ハーネスの実行時ディレクトリ（`.claude` / `.codex` / `.kiro` / `.aidlc`）。`plugins/<name>/` = 書いたプラグインソース。`dist/plugins/<name>/<harness>/` = 出した、インストールできるホストプラグイン。
+> **パスの慣例。** 以下の `<harness-dir>/` = ハーネスの実行時ディレクトリ（`.claude` / `.codex` / `.kiro` / `.aidlc`）。`plugins/<name>/` = 書いたプラグインソース。`dist/plugins/<name>/<harness>/` = `bun scripts/package.ts` が出す、gitignore した局所のホストプラグイン投影。
 
 この章は **AIDLC プラグイン** 系の正本です。任意で、所有があり、版付けされた寄与の集合 — 新しいステージ、エージェント、スコープ、方法 / ルール、センサー、doctor 検査、*既存コアステージへの加算変更* — をハーネス非依存の木として一度書き、各ハーネス向けに **本物のホストプラグインとして出す**。プラグインは `core/` を決して直しません。どのプラグインも無効なら、インストールは裸のコアとバイト一致です。系は、証明済みの編集無し継ぎ目一つ（加算で合成するフェーズルール）をどの面へも一般化し、専用インストーラではなく各ホスト自身のプラグイン機構で届けます。相互リンクは [Stage Definition](15-stage-definition.md)（プラグインが書くステージ frontmatter。`plugin` / `number` / `when` を含む）、[Engine and Skill System](17-skill-system.md)（コンポーザーが送りオーケストレータがルーティングするグラフ）、[Artifact Vocabulary](16-artifact-vocabulary.md)（名前空間規則）、執筆の通し [Authoring a Plugin](../harness-engineering/10-authoring-a-plugin.md)。
 
@@ -73,7 +73,7 @@ plugins/<name>/
   "version": "0.1.0",                 // semver; checked against dependents' constraints
   "description": "…",
   "author": { "name": "AWS AIDLC" },
-  "dependencies": ["core", "compliance@^1.2.0"],  // resolved vs git tags (<plugin>--v<version>)
+  "dependencies": ["core", "compliance@^1.2.0"],  // declared contract; resolution is deferred
   "aidlc": {
     "contributes": {                  // which subtrees this plugin ships
       "stages": "stages/", "agents": "agents/", "scopes": "scopes/",
@@ -127,11 +127,11 @@ composer は `裸のコア + {選んだプラグイン}` の上を一度走り�
 |------|---------|-------|
 | **Claude** | SessionStart hook (fires eagerly on session spawn) | managed allowlist (`strictKnownMarketplaces`) |
 | **Codex** | SessionStart hook (fires lazily on first interaction) | one-time trust prompt, content-hash-pinned |
-| **Kiro** (CLI/IDE) | `aidlc plugin sync` when the binary is on PATH, or manual `bun <plugin>/hooks/compose.ts` after the folder-drop | n/a - folder-drop distribution |
+| **Kiro** (CLI/IDE) | `aidlc engine plugin sync` when the binary is on PATH, or manual `bun <plugin>/hooks/compose.ts` after the folder-drop | n/a - folder-drop distribution |
 
 手順（引き金に関係なく同一）:
 
-1. **解決** — 選んだプラグインと推移的 `dependencies` 閉包を、公開版に対して解決する。
+1. **発見と検証** — ホストが提供した入れたルート、マニフェスト身元 / 版、プロジェクト選択。依存閉包はまだ解決しない。マニフェスト欄は先送りのまま（§8）。
 2. **新しいプリミティブをコピー** — 各プラグインの `stages` / `agents` / `scopes` / `knowledge` / `sensors` / `tools` 部分木を対応するハーネスルートへ。`{{HARNESS_DIR}}` トークンをハーネスの実際のディレクトリへ置換。`memory` は先送りのまま（§7）。
 3. **寄与をマージ** — ステージへのアクティブな寄与はすべて対象ステージのソースへ折り込む（§6）。構造面は集合和、散文フラグメントはアンカーで継ぎ込む。
 4. **コンパイル** — `aidlc-graph compile` が `stage-graph.json` + `scope-grid.json` を再生成。オーケストレータは完全にそれらからルーティングするので、プラグインステージは合成された瞬間に走る。直す散文もスキルも要らない。
@@ -157,17 +157,35 @@ composer は `裸のコア + {選んだプラグイン}` の上を一度走り�
 選択を見る・変えるには決定論ユーティリティコマンドを使います。
 
 ```bash
-aidlc plugin list
-aidlc plugin select test-pro
-aidlc plugin select aidlc,test-pro
-bun <harness-dir>/tools/aidlc-utility.ts select-plugins
-bun <harness-dir>/tools/aidlc-utility.ts select-plugins test-pro
-bun <harness-dir>/tools/aidlc-utility.ts select-plugins aidlc,test-pro
+aidlc engine plugin select
+aidlc engine plugin select test-pro
+aidlc engine plugin select aidlc,test-pro
 ```
 
-`select-plugins` は既知集合（`aidlc` に加え、コンパイル済みノードとスコープファイルで見つかったプラグイン名）に対して名前を検証し、`harness.json` を書き、グラフを再コンパイルし、ステージ / スコープランナーを再生成し、生成 SKILL.md のスコープ / ステージ表を一つのトランザクションで刷新します。`harness.json`、`stage-graph.json`、`scope-grid.json` をスナップショットし、遅い再生成ステップが失敗したら三つとも復元し、復元した選択に対して再生成鎖を再実行するので、インストールは裂けたままになりません。`/aidlc --doctor` は有効プラグイン、プラグインごとの有効ステージ件数を報告し、グラフの `enabled:false` フラグが `harness.json` と食い違えば hard-fail します。
+`select-plugins` は既知集合（`aidlc` に加え、コンパイル済みノードとスコープファイルで見つかったプラグイン名）に対して名前を検証し、ワークスペース変異ロックを持ったままです。プロジェクト面をステージングへコピーし、そこで無効寄与を剥がし、`harness.json` を書き、グラフ / 格子を再コンパイルし、ステージ / スコープランナーを再生成し、生成 SKILL.md 表を刷新します。それからステージングを生きたプロジェクトと差分し、変わったファイル一式を `aidlc-transaction.ts` へ出します。監査追記はトランザクションのコミット済み検証器です。失敗したら、エンジンは選択、グラフ、ランナー、表、寄与、サイドカーのバイトをすべて戻します。これは古い三ファイルスナップショット慣例の置き換えです。`/aidlc --doctor` は有効プラグイン、プラグインごとの有効ステージ件数を報告し、グラフの `enabled:false` フラグが `harness.json` と食い違えば hard-fail します。
 
-`aidlc plugin sync` は、入れたプラグイン合成のコマンドライン前面です。発見したプラグインルートの `hooks/compose.ts` ファイルを走らせ、プラグインルートが設定されていなければ `no installed plugins; nothing to sync` できれいに終わります。ルートは設定されているがどれも `hooks/compose.ts` を持たなければ、exit 1 で各ルートと理由を指名します。混成集合では飛ばした各ルートを警告し、妥当なルートを合成し、exit 0 です。
+`aidlc engine plugin list` は、入れた対合成した状態の別コマンドです。プロジェクト選択を出さず、変えません。
+
+## 5a. 入れた目録、合成スタンプ、同期
+
+ホストが公開対導入の状態を持ちます。AIDLC は、その入れた状態をプロジェクト局所の合成状態と、完全にオフラインで比べます。
+
+- Claude はスキーマ v2 の `~/.claude/plugins/installed_plugins.json` と、`~/.claude/settings.json` の `enabledPlugins` を読みます。
+- Codex は `~/.codex/config.toml` で宣言したプラグイン ID だけを読み、その正確なキャッシュパスを `~/.codex/plugins/cache/<marketplace>/<plugin>/<version-or-local>/` の下で検査します。
+- Kiro に証明済みホストストアはありません。いまのフックへ注入したプラグインルートだけを受け、その呼び出しの外では集約目録を利用不可と報告します。Claude と Codex も、レジストリ源が消えたときは同じフォールバックを使います。
+- OpenCode には生成した compose 投影がありますが、`aidlc-plugin.ts` はまだ `.opencode-plugin` を目録の種類として模型化しません。持ち運び可能な composer は独立に覆います。`plugin list` を証明済みの集約 OpenCode 目録と読まないでください。
+
+各アダプタはホストネイティブマニフェスト一つを読みます（`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json`、または `.kiro-plugin/plugin.json`）。所有マニフェストは `name: aidlc-<key>`、安全なキー、semver 版を使わなければなりません。重複身元はすべてのソースパス付きで拒否します。どのアダプタもホームやキャッシュディレクトリを再帰走査しません。
+
+合成のあと、AIDLC は `<harness-dir>/tools/data/plugin-compose-<key>.json` にプラグイン名、版、決定論的ソースハッシュを書きます。ハッシュは、ソートした compose 入力パスと、`{{HARNESS_DIR}}` 置換前の LF 正規化バイトを覆います。ホストラッパと生成したプロジェクト出力は除外するので、同じ版の vendored 編集とパスだけの改名が見えます。
+
+`aidlc engine plugin list [--verbose|--json]` はホスト目録をそれらのスタンプと比べます。既定出力のアクションは意図して三つだけです。`current`、`run: aidlc engine plugin sync`、または `needs attention: <remediation>`。verbose と JSON は内部理由を残します。版が違う、ソースが変わった、未合成、レガシー未スタンプ、無効、欠け、無効 / 曖昧、目録利用不可です。
+
+`aidlc engine plugin sync` は、有効で入れたプラグインすべてをステージしたプロジェクトで合成し、グラフとランナー面を再生成し、合成と所有の記録を書き、ステージしたプロジェクトを差分し、プロジェクトトランザクション一つを出します。期待状態検査が並行の生きた編集を拒否し、コミット失敗はバイト、モード、スタンプ、所有記録をすべてロールバックします。注入した現行ルート付きの対応ホストフックは、そのプラグインだけに同じ実装を使います。素の sync は、欠けた導入ソースの中身を決して消しません。明示 `aidlc engine plugin sync --prune-missing` は、証明済みの完全目録、確認（対話でないときは `--yes`）、ハッシュ証明の所有を要求します。局所変更または未所有パスは拒否します。
+
+list、doctor、sync のどれも、遠隔プラグインレジストリを検査しません。公開版の発見はホストの責任のままです。
+
+ソース木導入では、`plugin-sync` ユーティリティ動詞（compose フックのフォールバック前面）が、発見したプラグインルートの `hooks/compose.ts` ファイルを走らせ、プラグインルートが設定されていなければ `no installed plugins; nothing to sync` できれいに終わります。ルートは設定されているがどれも `hooks/compose.ts` を持たなければ、exit 1 で各ルートと理由を指名します。混成集合では飛ばした各ルートを警告し、妥当なルートを合成し、exit 0 です。
 
 ### プラグイン doctor 検査
 
@@ -196,7 +214,7 @@ bun <harness-dir>/tools/aidlc-utility.ts select-plugins aidlc,test-pro
 
 プラグインを無効にすると、自分のファイルだけでなく、コアステージへマージしたものも外れます。compose は実際に適用した構造追加（produces / sensors / `required` と任意 `conditional_on` を含む完全 consume エントリ / scopes / required_sections、対象ステージごと）と、成功して適用した各フラグメントのアンカー / order / ハッシュを、プラグインごとのサイドカー `tools/data/plugin-contrib-<key>.json` に記録します。継ぎ込んだ散文フラグメントは自分の番兵マーカーも運びます。無効化時、`select-plugins` は同じロールバックトランザクションの中で両方を入れたステージソースから剥がすので、無効プラグインの寄与は有効ステージを操舵しなくなります。再有効化は次のセッション開始で戻します。プラグインの compose フックが再マージし、バイト一致です。
 
-compose フックと `select-plugins` は、これらの変異を同じワークスペースロックで直列化します。ロックは入れたステージ編集、プラグインごとのサイドカー、選択書き、グラフ / 格子コンパイル、選択ロールバックにまたがるので、並行プラグインフックが互いの集合和更新を失わず、無効化が compose と競合して追跡されない寄与をアクティブに残せません。
+compose フックと `select-plugins` は、同じ realpath キーのワークスペースロックで計画を直列化します。生きたプロジェクト変更は、そのあとトランザクションエンジンのルートロックと期待状態検査を通してコミットします。保護する幅は、入れたステージ編集、プラグインごとのサイドカー、選択書き、グラフ / 格子コンパイル、ランナー / 表生成、監査検証、ロールバックにまたがるので、並行プラグインフックが互いの集合和更新を失わず、無効化が compose と競合して追跡されない寄与をアクティブに残せません。
 
 選択はコンパイル時に閉包検査されます。有効ステージは、唯一の生産ステージが無効な成果物を要求してはいけません。エラーは消費ステージ、成果物、無効な生産ステージ、それらを提供するプラグインを指名し、それらのプラグインを有効にするか消費者を無効にするよう伝えます。プラグインだけの選択が、飢えた必須入力でステージをルーティングしてしまうのを捕えます。無効ステージを指す `requires_stage` 辺はエラーでは**ありません**（依存が走らないとき順序辺は空虚です。プラグインだけのインストールがコアのあとにプラグインステージを並べるのは正当）。ただし doctor はその落ちた辺を advisory として列挙します。
 
@@ -291,7 +309,7 @@ Kiro CLI、Codex、OpenCode では、エンジン名簿の Markdown ペルソナ
 一度も調整しない独立した著者を安全に保つのは:
 
 - **名前空間。** 寄与する成果物の論理名は `<plugin>-` 接頭辞。`core-*` は予約。プラグインのステージ、エージェント、スコープ、センサーは、選んだ集合を横断しコアに対して一意であるべきです。プリミティブファイル衝突は no-clobber で、帰属付き drop-logged（黙った影付けは無い）。
-- **依存解決。** `dependencies` は git タグに対する semver で解決。循環は拒否。満たせない依存は、要求プラグインを指名する compose エラー。
+- **依存解決は先送り。** `dependencies` は意図した semver 契約を記録しますが、composer はまだ読まず、タグを解決せず、循環も拒否しません。起動や順序に頼らないでください。
 - **決定論的な並び。** 唯一の非可換面（散文フラグメント）は明示 `(order, plugin)` で並び、読み込み順では決して並ばない。
 - **衝突は見える。** 本当に非可換な衝突 — 同じステージの同じフラグメントアンカーで同じ order、満たせないプラグイン横断辺、重複プリミティブパス — は、オーバーレイ順で解決せず、帰属付きで落とすか拒否する。
 
@@ -308,6 +326,9 @@ Cursor の出したフックは Cursor の平らな camelCase スキーマ（`ho
 **導入、ホストごと:**
 
 ```bash
+# First materialize the ignored local plugin projections:
+bun scripts/package.ts
+
 # Claude Code
 /plugin marketplace add <repo-or-path>/dist/plugins/<name>/claude
 /plugin install aidlc-<name>@aidlc-plugins        # SessionStart hook composes on next session
@@ -322,19 +343,19 @@ codex plugin add aidlc-<name>@aidlc-plugins       # approve the one-time hook tr
 PLUGIN_ROOT="$(pwd)/dist/plugins/<name>/kiro"
 cp -r "$PLUGIN_ROOT"/. <project>/
 AIDLC_PLUGIN_ROOT="$PLUGIN_ROOT" AIDLC_PROJECT_DIR="<project>" \
-  AIDLC_HARNESS_DIR=.kiro aidlc plugin sync
+  AIDLC_HARNESS_DIR=.kiro aidlc engine plugin sync
 # fallback when aidlc is not installed:
 AIDLC_PLUGIN_ROOT="$PLUGIN_ROOT" AIDLC_PROJECT_DIR="<project>" \
   AIDLC_HARNESS_DIR=.kiro bun "$PLUGIN_ROOT/hooks/compose.ts"
 ```
 
-それから `/aidlc plugin list` と `/aidlc --doctor` が有効集合を映します（例: `core + test-pro` の 34 ステージグラフ、または `select-plugins` が狭めたフィルタ済みグラフ）。スコープ付き実行（`/aidlc --scope enterprise`）は、スコープが経路に置いたところへプラグインのステージをルーティングします。
+それから `/aidlc engine plugin list` と `/aidlc --doctor` が、入れたプラグインと合成したプラグインの版とソースハッシュを比べます。選択診断は doctor に残り、スコープ付き実行（`/aidlc --scope enterprise`）は、スコープが経路に置いたところへ有効プラグインステージをルーティングします。
 
 **作業例 — 混成フリート横断の test-pro。** プラットフォームチームは `test-pro` を一度公開します（リポジトリを検証し、`aidlc-plugin-build.ts` で対応ハーネス投影を各々ビルドし、`aidlc-plugin-test.ts` で使い捨て導入候補に対して各投影をテストし、`<plugin>--v<version>` タグを押し、生成したマーケットプレイスメタデータを公開）。Claude チームは `/plugin install`。Codex チームは `codex plugin add`（信頼を一度承認）。Kiro チームは `git pull` + 上のように composer を明示実行。どの場合も composer は test-pro の新しいステージ 2 つ **と** `build-and-test` / `nfr-requirements` / `nfr-design` / `performance-validation` への寄与をマージします。同じ豊かな、34 ステージ、doctor きれいなインストールです。ハーネス投影 7 すべて（Claude、Codex、Cursor、Kiro CLI、Kiro IDE、opencode、GitHub Copilot）で検証済みです。
 
-**Status.** 実装し検証済み: `number` / `name` / `plugin` / `when` のスキーマ支援（`aidlc-stage-schema.ts`）。書いた `plugin` 所有のコンパイル側持ち越し（コアはフィールドを省く）。`harness.json` + `select-plugins` 経由の導入時選択（全グラフ永続、フィルタ済み実行時読み込み、閉包検査、ランナー刈り込み、doctor 行、compose advisory drop を含む）。有界 fail-loud 実行の選択認識 `tools/<plugin>-doctor.ts` 検査。スタンドアロンオフライン執筆ツール `aidlc-plugin-create.ts`、`aidlc-plugin-validate.ts`、`aidlc-plugin-build.ts`、`aidlc-plugin-test.ts`（決定論足場、同梱 compose フックテンプレート、マニフェスト導出ハーネス対象データ、正規寄与パス検証、プラグイン / ハーネス結び出力マーカー付き）。同じツールへ委ねるトップレベル `aidlc plugin validate|build` 経路。`aidlc plugin list` と `aidlc plugin sync`。プラグイン名前空間のステージ / スコープランナー生成。共有パッケージャ / スタンドアロン emitter（発見したどのハーネス投影も）。プラグイン `stages/`、`scopes/`、`agents/`、`knowledge/`、`sensors/`、`tools/` の投影と no-clobber compose。ハーネス非依存 compose フック（`scripts/plugin-hooks-template/compose.ts`）。再利用 `tests/harness/plugin-kit.ts` のビルド、共有 compose サブプロセス / drop 読み、委譲内容検証、ライブ呼び出しヘルパ。`produces` / `consumes` / `sensors` / `scopes`（自プラグイン、入れたファイルガード付き） / `required_sections` + 散文フラグメント（内容ハッシュ、冪等、順決定論）の寄与継ぎ目。ガードは `tests/integration/t188-plugin-compose.test.ts`（compose 仕組み）、`tests/integration/t224-plugin-selection.test.ts`（選択）、`tests/integration/t300-plugin-kit.test.ts`（再利用キット）、`tests/integration/t327-plugin-author-routes.test.ts`（トップレベル執筆経路）、`tests/unit/t314-plugin-validate.test.ts`（オフラインバリデータ）、`tests/unit/t315-plugin-build.test.ts`（隔離バイト一致ビルダ）、`tests/unit/t316-plugin-test.test.ts`（隔離候補 compose 層）、`tests/unit/t317-plugin-create.test.ts`（隔離ツールチェーン全体足場）、`tests/unit/t313-plugin-doctor-checks.test.ts`（doctor ランナー）、各プラグイン自身の `tests/`（内容。統合層へ配線）。トップレベル `aidlc plugin create|test` 経路は RFC #723 §2e へ先送りのまま。`aidlc-plugin-test --dist` は RFC #722 マイルストーン 2 がリリース経路を出すまで予約のまま。**先送り / まだ配線していない:** プラグイン `memory/` 部分木の投影 / マージと設定可能な `aidlc.contributes` ルーティング。`adds.requires_stage` マージ（宣言 → 記録）。`when:` 述語評価（解析するがエンジン消費者無し）。マージした `required_sections` の機械強制（フィールドはマージ + 検証するがコンパイル済みノードへ届かず、出荷 required-sections センサーは期待をテンプレートから導く — 宣言節が欠けてもステージはまだ落ちない）。`after-questions` フラグメントアンカー（`locateAnchor` にケースが無い — "unknown anchor" を drop-log。`after-step:<n>` を使う）。どのロックファイルまたは `dependencies` の読み。NEW slug の番号種まきは辺認識です。最初のコンパイルは各フェーズの新しいステージのバッチを自分の `requires_stage` 辺で並べ（タイは書いた `number:` ヒント、それから slug）、その順で次の空き連続索引を割り当てます。エンジンが番号値をすべて所有します（著者は主張しないので、調整していないプラグインは衝突できない）。複数ステージプラグインの部分 DAG はファイル名に関係なく流れ順で種まきし、すでにピンした行は JSON 値を保ちます。書いた `name:` が新しい slug の表示名を種まきします。
+**Status.** 実装し検証済み: `number` / `name` / `plugin` / `when` のスキーマ支援（`aidlc-stage-schema.ts`）。書いた `plugin` 所有のコンパイル側持ち越し（コアはフィールドを省く）。`harness.json` + `select-plugins` 経由の導入時選択（ステージした再生成、共有トランザクションのコミット / ロールバック、監査検証、全グラフ永続、フィルタ済み実行時読み込み、閉包検査、ランナー刈り込み、doctor 行、compose advisory drop を含む）。有界 fail-loud 実行の選択認識 `tools/<plugin>-doctor.ts` 検査。スタンドアロンオフライン執筆ツール `aidlc-plugin-create.ts`、`aidlc-plugin-validate.ts`、`aidlc-plugin-build.ts`、`aidlc-plugin-test.ts`（決定論足場、同梱 compose フックテンプレート、マニフェスト導出ハーネス対象データ、正規寄与パス検証、プラグイン / ハーネス結び出力マーカー付き）。同じツールへ委ねるトップレベル `aidlc plugin validate|build` 経路。証拠付き Claude / Codex 目録と Kiro 現行ルートフォールバック。決定論的合成スタンプ、入れた対合成した比較器全体、トランザクション集約 sync、所有安全な明示 prune。プラグイン名前空間のステージ / スコープランナー生成。共有パッケージャ / スタンドアロン emitter（発見したどのハーネス投影も）。プラグイン `stages/`、`scopes/`、`agents/`、`knowledge/`、`sensors/`、`tools/` の投影と no-clobber compose。ハーネス非依存 compose フック（`scripts/plugin-hooks-template/compose.ts`）。再利用 `tests/harness/plugin-kit.ts` のビルド、共有 compose サブプロセス / drop 読み、委譲内容検証、ライブ呼び出しヘルパ。`produces` / `consumes` / `sensors` / `scopes`（自プラグイン、入れたファイルガード付き） / `required_sections` + 散文フラグメント（内容ハッシュ、冪等、順決定論）の寄与継ぎ目。ガードは `tests/unit/t242-plugin-state.test.ts`（目録フィクスチャ、ハッシュ、比較器、ロールバック、prune）、`tests/integration/t188-plugin-compose.serial.test.ts`（compose 仕組み）、`tests/integration/t224-plugin-selection.test.ts`（選択）、`tests/integration/t300-plugin-kit.test.ts`（再利用キット）、`tests/integration/t327-plugin-author-routes.test.ts`（トップレベル執筆経路）、`tests/unit/t314-plugin-validate.test.ts`（オフラインバリデータ）、`tests/unit/t315-plugin-build.test.ts`（隔離バイト一致ビルダ）、`tests/unit/t316-plugin-test.test.ts`（隔離候補 compose 層）、`tests/unit/t317-plugin-create.test.ts`（隔離ツールチェーン全体足場）、`tests/unit/t313-plugin-doctor-checks.test.ts`（doctor ランナー）、各プラグイン自身の `tests/`（内容。統合層へ配線）。トップレベル `aidlc plugin create|test` 経路は RFC #723 §2e へ先送りのまま。`aidlc-plugin-test --dist` は RFC #722 マイルストーン 2 がリリース経路を出すまで予約のまま。**先送り / まだ配線していない:** プラグイン `memory/` 部分木の投影 / マージと設定可能な `aidlc.contributes` ルーティング。`adds.requires_stage` マージ（宣言 → 記録）。`when:` 述語評価（解析するがエンジン消費者無し）。マージした `required_sections` の機械強制（フィールドはマージ + 検証するがコンパイル済みノードへ届かず、出荷 required-sections センサーは期待をテンプレートから導く — 宣言節が欠けてもステージはまだ落ちない）。`after-questions` フラグメントアンカー（`locateAnchor` にケースが無い — "unknown anchor" を drop-log。`after-step:<n>` を使う）。どのロックファイルまたは `dependencies` の読み。NEW slug の番号種まきは辺認識です。最初のコンパイルは各フェーズの新しいステージのバッチを自分の `requires_stage` 辺で並べ（タイは書いた `number:` ヒント、それから slug）、その順で次の空き連続索引を割り当てます。エンジンが番号値をすべて所有します（著者は主張しないので、調整していないプラグインは衝突できない）。複数ステージプラグインの部分 DAG はファイル名に関係なく流れ順で種まきし、すでにピンした行は JSON 値を保ちます。書いた `name:` が新しい slug の表示名を種まきします。
 
-## 9. 不変条件
+## 10. 不変条件
 
 - **コアは不変。** どのプラグインも `core/` を決して直さない。
 - **加算のみ。** 寄与は足す。上書きも削除もしない。

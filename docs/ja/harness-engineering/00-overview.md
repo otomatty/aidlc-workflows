@@ -71,51 +71,51 @@ AI-DLC の文書は、話題ではなく「いま何をしたいか」で分か�
 
 ## ビルド模型: `core/` に書き、ハーネスを再生成する
 
-ハーネスエンジニアが書くものは全部 **`core/`** にあります。手で書く、ハーネス非依存の正本です（ステージは `core/aidlc-common/stages/`、エージェントは `core/agents/`、ほかスコープ、ルール、センサー、ナレッジ、ツール、フック）。実際に走るハーネスごとの `dist/<harness>/`（`dist/claude/.claude/`、`dist/kiro/.kiro/`、`dist/kiro-ide/.kiro/`、`dist/codex/`、`dist/cursor/`、`dist/opencode/`、`dist/copilot/`）は、`core/` と薄い `harness/<name>/` の面から **生成** され、**ドリフト検査** されます。そこへの手編集は CI が落とします。ループはいつも次です。
+ハーネスエンジニアが書くものは全部 **`core/`** にあります。手で書く、ハーネス非依存の正本です（ステージは `core/aidlc-common/stages/`、エージェントは `core/agents/`、ほかスコープ、ルール、センサー、ナレッジ、ツール、フック）。ソース開発で使うハーネスごとの `dist/<harness>/` 木（`dist/claude/.claude/`、`dist/kiro/.kiro/`、`dist/kiro-ide/.kiro/`、`dist/codex/`、`dist/cursor/`、`dist/opencode/`、`dist/copilot/`）は、`core/` と薄い `harness/<name>/` の面から **生成** されます。無視されるローカル出力で、コミットも手編集もしません。ループはいつも次です。
 
 ```bash
 # 1. edit the source in core/ (never dist/)
 $EDITOR core/aidlc-common/stages/inception/my-stage.md
 
-# 2. regenerate every harness tree from core/ + harness/
+# 2. regenerate both channels for every harness from core/ + harness/
 bun scripts/package.ts
 
-# 3. confirm no drift (the CI guard; run before committing)
+# 3. prove deterministic generation (the CI guard)
 bun scripts/package.ts --check
 ```
 
-`core/` の編集と、再生成した `dist/` を一緒にコミットします。以降の章のレシピが `bun .claude/tools/aidlc-graph.ts compile`（やほかのツール）を走らせる、と言うときは、*インストール済み* の木に対してです。プロジェクトの `.claude/`（または `.kiro/` / `.codex/`）のグラフを実行時に再コンパイルします。書く場所ではありません。**書くのは `core/`、ツールが走るのはハーネスディレクトリ**です。手書きソース対生成ランタイム、この切れ目がこのガイドを通しての一本です。ビルド契約の全体は [新しいハーネスへの移植](09-porting-to-a-new-harness.md) と、Developer Reference の [Architecture § Source vs distribution](../reference/01-architecture.md#source-vs-distribution-one-core-many-harnesses) です。
+コミットするのは書いた `core/` または `harness/` の編集であり、生成されたルートではありません。`--check` はコピー、ネイティブ、プラグインの投影を、独立した一時ルートで二度ビルドし、バイト比較します。以降の章のレシピが `aidlc engine graph compile`（または別のツール）を走らせよと言うとき、入れたコマンドは、プロジェクトのアクティブなハーネス木に対してそのツールを解決します。生成されたコピーチャネルの散文は Bun ディスパッチャを使い、ネイティブの散文は `aidlc` を使います。著者はチャネル非依存の経路を使います。書く場所ではありません。**書くのは `core/`。ディスパッチャは入れた投影に対してツールを走らせます。** 書いたソースと生成された実行時のこの切れ目が、このガイドを通して揃えておく一点です。ビルド契約の全体は [新しいハーネスへ移植する](09-porting-to-a-new-harness.md) と、Developer Reference の [Architecture § Source vs distribution](../reference/01-architecture.md#source-vs-distribution-one-core-many-harnesses) です。
 
 ---
 
-## Developer Reference 側に出るとき
+## Developer Reference へ越えるとき
 
-変えるのがデータのほうではなく、フレームワークのコードなら [Developer Reference](../reference/00-overview.md) です。
+変更がデータの話ではなく、フレームワークのコードであるときは [Developer Reference](../reference/00-overview.md) です。
 
-- オーケストレータのルーティングや状態機械（[Orchestrator](../reference/03-orchestrator.md)、[State Machine](../reference/12-state-machine.md)）。エンジン / コンダクター / ディレクティブ / ランナー / スコープ形 / スウォームの規範契約は [The Skill System](../reference/17-skill-system.md)
-- フックや CLI ツール（[Hooks and Tools](../reference/06-hooks-and-tools.md)）
-- ステージグラフのコンパイルパイプライン、監査イベントの分類
-- テスト一式（[Testing](../reference/09-testing.md)）
+- オーケストレータのルーティングや状態機械（[Orchestrator](../reference/03-orchestrator.md)、[State Machine](../reference/12-state-machine.md)）— エンジン / コンダクター / ディレクティブ / ランナー / スコープの形 / スウォームの規範契約は [The Skill System](../reference/17-skill-system.md)
+- フックまたは CLI ツール（[Hooks and Tools](../reference/06-hooks-and-tools.md)）
+- ステージグラフのコンパイルパイプライン、または監査イベントの分類
+- テストスイート（[Testing](../reference/09-testing.md)）
 
-ステージやエージェントを足すとワークフローグラフは *触れます* が、それを読むコードは変わりません。だからここです。グラフのコンパイルの仕方を変える、新しい監査イベントを足す、はコード変更です。あちらです。
+ステージやエージェントを足すことはワークフローグラフに*触ります*が、それを読むコードは変えません。だからここです。グラフのコンパイルの仕方を変える、新しい監査イベントを足す、はコードの変更です。あちらです。
 
 ---
 
 ## このガイドの並び
 
-初回は順に読んでください。
+初めて読むときは順に:
 
-1. **[ステージの構造](01-anatomy-of-a-stage.md)** — ステージファイルの形式。frontmatter の契約、3 区画の本文、グラフのコンパイル。何かを変える前に、いちばん大事な理解です。
-2. **[ステージを足す](02-adding-a-stage.md)** — 端から端まで。ファイルを書き、依存の辺を結び、コンパイルし、スコープに現れるのを見る。
+1. **[ステージの構造](01-anatomy-of-a-stage.md)** — ステージファイルの形式: frontmatter 契約、本文の三区画、グラフのコンパイル。何かを変える前に理解する、いちばん大事なこと。
+2. **[ステージを足す](02-adding-a-stage.md)** — 端から端まで: ファイルを書く、依存の辺を結ぶ、コンパイル、スコープに現れるのを見る。
 3. **[エージェントを足す](03-adding-an-agent.md)** — ペルソナを書き、リードまたは支援するステージに結ぶ。
-4. **[スコープ](04-scopes.md)** — スコープとステージの対応を定義し、調整する。
-5. **[ルールとラーニングループ](05-rules-and-the-loop.md)** — 層の鎖にルールを書き、ループが訂正をルールへ昇格させる。
+4. **[スコープ](04-scopes.md)** — スコープとステージの写像を定義し、調える。
+5. **[ルールとラーニングループ](05-rules-and-the-loop.md)** — 層チェーンにルールを書き、ループに訂正をルールへ昇格させる。
 6. **[センサー](06-sensors.md)** — 決定論的な検査を書き、ステージに結ぶ。
 7. **[チームナレッジ](07-team-knowledge.md)** — エージェントに領域の文脈を渡す。
-8. **[Construction とスウォーム](08-construction-and-swarm.md)** — ルール層でチームの Construction 自律姿勢を決め、自律スウォームの Unit ごとのボルトが並行で走れる範囲を `units-generation` で形作る。
-9. **[新しいハーネスへの移植](09-porting-to-a-new-harness.md)** — `harness/<name>/` ディレクトリ 1 つとマニフェスト 1 行で、別の CLI ハーネスを足す。`core/` は触らない。マニフェスト契約、フックアダプタ、`emit.ts`。
-10. **[プラグインを書く](10-authoring-a-plugin.md)** — `plugins/<name>/` に再利用できる任意の **AIDLC プラグイン** を包む。新しいステージ / エージェント / スコープ / センサー / doctor 検査 + 既存コアステージへの加算寄与。ハーネスごとに本物のホストプラグインとして出す。設計は Developer Reference の 1 章（[18 mechanism](../reference/18-plugin-mechanism.md)）。
+8. **[Construction とスウォーム](08-construction-and-swarm.md)** — ルール層でチームの Construction 自律姿勢を決め、`units-generation` を通して自律スウォームの Unit ごとのボルトが並行できるものを形作る。
+9. **[新しいハーネスへ移植する](09-porting-to-a-new-harness.md)** — `harness/<name>/` ディレクトリ 1 つとマニフェスト行 1 つで、別の CLI ハーネスを足す。`core/` は直さない。マニフェスト契約、フックアダプタ、`emit.ts`。
+10. **[プラグインを書く](10-authoring-a-plugin.md)** — `plugins/<name>/` に再利用できる任意の **AIDLC プラグイン** を包む。新しいステージ / エージェント / スコープ / センサー / doctor 検査 + 既存コアステージへの加算寄与。ハーネスごとに本物のホストプラグインとして出す。設計は Developer Reference の一章（[18 の仕組み](../reference/18-plugin-mechanism.md)）。
 
 ## 次
 
-[ステージの構造](01-anatomy-of-a-stage.md) から始めてください。ほかの変更は、この形式の上に乗ります。
+[ステージの構造](01-anatomy-of-a-stage.md) から始めてください。ほかの変更が全部乗る形式です。

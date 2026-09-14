@@ -6,6 +6,8 @@ AI-DLC を動かす入れ子の状態機械は三つです。**ワークフロ�
 
 > **北極星の不変条件:** TypeScript が決定論的な帳簿を持ち、LLM が判断を持つ。監査の発行はすべてツールかフックから出るので、発行経路に LLM の散文は入りません。MD ファイルを読んで `aidlc-audit.ts append <EVENT>` が散文の手順として出てきたら、それはバグです。
 >
+> **権限の結び:** 照会は決して書かず、ガードは証拠を決して消さない。権限は内容と試行に結び、発行身元やイベント順には結びません。[「権限の不変条件」](#authority-invariants) が両方の規則と、覆うものを名指します。
+>
 > **監査先行の原子性:** ツールは状態を変える**前に**監査行を出します。監査の発行が失敗したら、状態に触る前に throw します。だから `audit.md` と状態ファイルは食い違いません。失敗の型と、二つの例外 — 意図の監査（`WORKTREE_*`、`AUDIT_*`、`MERGE_DISPATCH_INVOKED`）と、監査**後**の DocumentKB カタログイベント（成果物が導出で、作り直せる）— は、章末の [「監査先行の原子性」](#audit-first-atomicity) にあります。
 
 ---
@@ -28,12 +30,14 @@ AI-DLC を動かす入れ子の状態機械は三つです。**ワークフロ�
 stateDiagram-v2
     [*] --> Running : WORKFLOW_STARTED
     Running --> Completed : WORKFLOW_COMPLETED
+    Running --> Archived : WORKFLOW_ARCHIVED
+    Archived --> Running : WORKFLOW_UNARCHIVED
     Completed --> [*]
 ```
 
-<!-- Text fallback: initial state transitions to Running on WORKFLOW_STARTED; Running transitions to Completed on WORKFLOW_COMPLETED; Completed is terminal. -->
+<!-- Text fallback: initial state transitions to Running on WORKFLOW_STARTED; Running transitions to Completed on WORKFLOW_COMPLETED; Running transitions to Archived on WORKFLOW_ARCHIVED; Archived transitions back to Running on WORKFLOW_UNARCHIVED; Completed is terminal. -->
 
-**状態値:** `Running`、`Completed`。
+**状態値:** `Running`、`Completed`、`Archived`。
 
 ワークフローは最初のインテント作成（`aidlc-utility intent-create`。最初の `/aidlc` で自動、または `/aidlc-init`）で始まり、スコープ内最後のステージの承認ゲートが閉じたときに終わります。`Paused` も `Waiting for Approval` もありません。承認はステージの関心、一時停止に UX はありません。
 
@@ -43,6 +47,8 @@ stateDiagram-v2
 |---|---|---|
 | `[*] -> Running` | `aidlc-utility intent-create` | `tools/aidlc-utility.ts` |
 | `Running -> Completed` | 最終ステージの結果が `aidlc-orchestrate.ts report` 経由で報告される | `tools/aidlc-state.ts`（内部発行） |
+| `Running -> Archived` | `aidlc-utility intent archive <name>`（人の判断。完了インテント、生きた Bolt worktree、請求済みチーム Unit は拒否） | `tools/aidlc-utility.ts` |
+| `Archived -> Running` | `aidlc-utility intent unarchive <name>` | `tools/aidlc-utility.ts` |
 
 ---
 
@@ -167,6 +173,8 @@ stateDiagram-v2
 
 **ゲート改訂のバックストップ。** コンダクターが開いたゲートで、差し戻しを先に報告せず成果物を直したとき、`approved` 報告は、ゲート後の人のターンのあとに成果物書きがあった監査証拠があるなら、欠けた `GATE_REJECTED` + `STAGE_REVISING` 対を完了前に和解します。埋め戻した行は `Recovered: true` を運びます。人のターンより前のレビュアー書きは数えません。レビュアー付きステージは、その復旧差し戻しのあと `[R]` を保ち、ゲートが再開できる前に新しいレビューと通常の `revised` 報告が要ります。迂回は `AIDLC_SKIP_REVISION_BACKSTOP=1`。
 
+**Archive（issue #980）。** `aidlc-utility intent archive <name> [--reason <text>]` は、チームが終わらせない飛行中インテントを退役させます。ワークスペースロックの下で、先にそのインテント自身の監査シャードへ `WORKFLOW_ARCHIVED` を出し、それから状態ファイルの `Status` を `Archived`、`intents.json` 行を `archived` にします。レコードディレクトリ、成果物、監査シャードは動かさず消しません。そのレコードへの続く `next`（古い利用者単位カーソルまたはセッション結び）は、`intent unarchive` を名指す終端 `done` を出すので、退役したステージが事故で再開しません。`park` は完了したものと同じく、アーカイブ済みワークフローを拒否します。アーカイブは完了インテント（すでに終端）、まだ飛行中の Bolt worktree があるインテント、請求済み Unit のあるチーム所有インテントでは拒否します。`intent unarchive <name>` は二つのフィールド書きを戻し、`WORKFLOW_UNARCHIVED` を出します。既定の `intent` 一覧はアーカイブ行を隠します（`--all` で出し、`--json` は常に全行を運ぶ）。作成ゲートは無視し、唯一レコードのフォールバックも暗黙に解決しません。
+
 **Park（issue #365/#367）。** `aidlc-orchestrate park` はステージを進めずに `Parked` / `Parked At Stage` の実行時印を書きます（`aidlc-state.ts park` 経由。`WORKFLOW_PARKED` を出す）。続く素の `next` は終端の `parked` ディレクティブを再発行し、Stop フックがターンを終わらせるので、長いワークフローは残りステージをゴム印して `done` にせず、セッションをまたいで止められます。`/aidlc --resume` は印を消してから続けます（`unpark` が `WORKFLOW_UNPARKED` を出す）。無人の自律 Construction 実行（`Construction Autonomy Mode: autonomous`）は park を拒否します。ツールも Stop フックの `parked` 許可も自律モードでは断り、再開する人がいないままループが動き続けます。
 
 ### 改訂ループ
@@ -206,7 +214,7 @@ report awaiting-approval  →  [?] AwaitingApproval
 
 ## 監査イベントの分類
 
-**91 イベント**を、下では 19 カテゴリに分けます（正本の `audit-format.md` レジストリは同じ 91 を 22 に割ります。分け方は見せ方で、イベント集合が不変です）。各イベントの発行元はツールかフックがちょうど一つです。例外は次リリース向けに先行登録したイベントで、Emitter 欄が `Reserved (v0.4.0 PR N)`、`Reserved (v0.5.0 PR N)`、`Reserved (v0.6.0 PR N)` と読むものです。ドリフトテストの前方検査は、消費 PR が発行元を出荷するまでこれらを飛ばします。ドリフトテスト `tests/integration/t48-audit-event-emitters.test.ts` が、この章の表とコードの前方 / 後方 / 三次 / 対 / MD-MD 一致を強制します。
+**98 イベント**を、下では 20 カテゴリに分けます（正本の `audit-format.md` レジストリは同じ 98 を 24 に割ります。分け方は見せ方で、イベント集合が不変です）。各イベントの発行元はツールかフックがちょうど一つです。例外は次リリース向けに先行登録したイベントで、Emitter 欄が `Reserved (v0.4.0 PR N)`、`Reserved (v0.5.0 PR N)`、`Reserved (v0.6.0 PR N)` と読むものです。ドリフトテストの前方検査は、消費 PR が発行元を出荷するまでこれらを飛ばします。ドリフトテスト `tests/integration/t48-audit-event-emitters.test.ts` が、この章の表とコードの前方 / 後方 / 三次 / 対 / MD-MD 一致を強制します。
 
 ### ワークフローの寿命
 
@@ -216,6 +224,8 @@ report awaiting-approval  →  [?] AwaitingApproval
 | `WORKFLOW_COMPLETED` | `tools/aidlc-state.ts` |  |
 | `WORKFLOW_PARKED` | `tools/aidlc-state.ts` | `park` — ワークフローを途中で止め、後のセッション向け。ステージは進まない |
 | `WORKFLOW_UNPARKED` | `tools/aidlc-state.ts` | `unpark` — 明示 `--resume` 再入場で park 印を消す |
+| `WORKFLOW_ARCHIVED` | `tools/aidlc-utility.ts` | `intent archive <name>` — インテントを `Archived` / `archived` へ退役。レコードと監査シャードは残す。そのインテント自身のシャードへ書く |
+| `WORKFLOW_UNARCHIVED` | `tools/aidlc-utility.ts` | `intent unarchive <name>` — アーカイブしたインテントを `Running` / `in-flight` へ戻す |
 
 ### フェーズの寿命
 
@@ -252,10 +262,11 @@ report awaiting-approval  →  [?] AwaitingApproval
 |---|---|---|
 | `DECISION_RECORDED` | `tools/aidlc-log.ts` | ゲート以外の `AskUserQuestion` の前に出る。選択肢を取る |
 | `QUESTION_ANSWERED` | `tools/aidlc-log.ts` | ゲート以外の質問応答のあと。承認の選択は `report` が持つライフサイクルイベント |
-| `SUMMARY_CONFIRMATION_RECORDED` | `tools/aidlc-log.ts` | 人が裏付けた統合要約レシート。新しい行は `Hash Scope: confirmed-content-v1` を運び、前文と見える Q\<n\> / フィードバック節（仮定判断後のフォローアップ質問を含む）の正規順を保つ。要約後の `Assumption Confirmation` 節とその中身はちょうど一つ除外する。同名の要約前節はハッシュ対象のまま。要約後のほかの見える Markdown または生 HTML 見出しは fail-close。ステージ固有の要約前見出しは有効のまま。スコープ無しレシートはレガシーのファイル全体検証を保ち、許可された追記のあと再確認が要る。公開監査追記からは予約済み |
-| `PLAN_APPROVAL_RECORDED` | `tools/aidlc-log.ts` | 人が裏付けた Code Generation 計画レシート。インテント、ステージまたは Unit 対象、ディレクティブ世代、run floor、source floor、指紋、プロンプト、セッション応答、質問ダイジェストに結ぶ。保護された実行時状態が正。この行は出自だけ |
-| `REVIEW_REQUESTED` | `tools/aidlc-log.ts` | コンダクターが `stage-protocol-reviewer.md` §12a のレビュアーを出すときに発火。ステージ必須の `review_artifact` スカラーが Markdown 追記の所有者を明示選択する。プラグインが足した出力と produces 順は変えられない。新しい `--unit` 依頼は、権威ある DAG のメンバか、いまの no-DAG 試行で一致する開いた / マージ確認済みのツール所有 Bolt 試行が証明した Unit を指名しなければならない。`AUDIT_MERGED` マージ証拠待ちの完了は、履歴無し Unit と同様に拒否する。安定したファイル身元スナップショット 1 つが、宣言した成果物すべて、正確な所有者バイト境界、`workspace_requires` ステージの依頼時ワークスペースソースを記録する。以前の付録があるとき、依頼は置換付録が正確に描かなければならない乱数 Review Challenge も記録して返す。stale-receipt 復旧は、成果物・ソース・両方のどれがスコープ付き書き込み停止を開いたかを記録するので、古い付録を外したあともその原因を戻すと窓が閉じる。`--retry-pending` は現代の結びがあるあと一度だけ受け付け、それらの成果物 / ソース身元とチャレンジを再利用する。有効なフィールドの薄いレガシー鎖（チャレンジ無しの pending 非空付録依頼を含む）は、歴史的な未結 Retry 印を含んでいても、完全成果物の正確な一致のあと `Upgrade: legacy-request` を一つ出してよい。その現代アップグレード行はリトライを消費し、新しいレビュアーディスパッチが要る。壊れた依頼行は無視するので、新しい依頼が序数を再利用できる |
-| `REVIEW_COMPLETED` | `tools/aidlc-log.ts` | 一致する正のイテレーション依頼のあとだけ発火。一貫した成果物スナップショット 1 つが、依頼した接頭辞バイトとファイル身元をすべて保たなければならない。接尾辞全体は空白区切りと、一致する判定・Reviewer・Iteration 行をちょうど一つ含む終端 `## Review` H2 ちょうど一つ、依頼が出したときは一致する Request Challenge ちょうど一つでなければならない。Bun の Markdown パーサは、後続の Markdown または生 HTML の H1/H2、壊れた判定、衝突する描画所有フィールドを拒否する。フェンス / インラインコードと HTML コメント内のリテラル例は権限を持たず、list / blockquote / table 入れ物はトップレベル所有を作れない。依頼時と完了のソース指紋は Git 非依存の有界ファイルシステム身元、または安全に読めないときの `unbindable` を使い、一致しなければならない。当たるところではユニットごとの source-manifest 結びも一致しなければならない。壊れた完了行は pending 依頼を消費しない。`READY` は直ちに終端。advisory `NOT-READY` は通常フロー通過のあと終端。adversarial `NOT-READY` は `reviewer_max_iterations` でのみ終端。後の宣言出力またはソース書きで無効になった終端レシートは、別の復旧依頼を 1 回得る。どちらの復旧判定も終端で、二度目の無効化は人のリセットが要る。レガシーの等指紋レシートは読めるまま。ゲート開放とすべての完了経路は一致する終端レシートが要る。ユニットごとのステージは当たるユニットごとにレシート 1 本。マージ済み Bolt のある no-DAG ユニットごとステージは、新しいステージ単位レシート 1 本か、マージ済み全 Unit の新しいユニットごとレシートを受け付ける。失敗 / 破棄 Bolt は何も負わず、開いた Bolt は別のゲートブロックを足さない。マージ済み Unit が無ければ、Unit 無しのステージ単位レシートだけがフォールバックを満たす。自律 finalize はさらに、いまの成果物 / ソース結びと必須ファイルを要求する |
+| `SUMMARY_CONFIRMATION_RECORDED` | `tools/aidlc-log.ts` | 人が裏付けた統合要約レシート。新しい行は `Hash Scope: confirmed-content-v1` を運び、前文と見える Q\<n\> / フィードバック節（仮定判断後のフォローアップ質問を含む）の正規順を保つ。要約後の `Assumption Confirmation` 節とその中身はちょうど一つ除外する。同名の要約前節はハッシュ対象のまま。要約後のほかの見える Markdown または生 HTML 見出しは fail-close。ステージ固有の要約前見出しは有効のまま。スコープ無しレシートはレガシーのファイル全体検証を保ち、許可された追記のあと再確認が要る。`Looks correct` レシートは `Summary Authorization Id` も運ぶ。確認が鋳造した認可（試行、ステージ、Unit、ワークフロー、質問パス、確認した内容、選択のダイジェスト）。同じ id が `<record>/.aidlc-summary-authorization/` の下でスコープのアクティブ認可になり、`Request changes` 応答がそれを撤回する。公開監査追記からは予約済み |
+| `PLAN_APPROVAL_RECORDED` | `tools/aidlc-log.ts` | 人が裏付けた Code Generation 計画レシート。記録する権限はインテント、ステージまたは Unit 対象、ステージ試行（run floor）、内容指紋（投影した計画と指示に Testing Contract ハッシュを足したもの）、プロンプト（答えを空にした質問ファイル）、セッション応答に結ぶ。質問を出したディレクティブの身元にも、行順にも結ばない。行は出自としてディレクティブ世代と生の質問ファイルダイジェスト（`Questions SHA-256`）も運ぶ。どちらも記録し、決して比較しないので、承認後に質問ファイルへ付けた注記は判断を立たせたまま、人が見たプロンプトの変化はそれを退役させる。保護された実行時状態が正。この行は出自だけ |
+| `PLAN_APPROVAL_OVERRIDDEN` | `tools/aidlc-log.ts` | Plan Approval の人だけの break-glass 出口。人がプロンプトとして `Override Plan Approval: <reason>` を打ったときだけ発火する（human-turn フックがその打った文をセッション下に記録する。選んだ選択肢は決してしない）。コンダクターが同じ理由で `answer --checkpoint plan-approval --override "<reason>"` を走らせ、通常レシート経路が拒否したとき。`Reason`、`Failed Checks`（通常経路が拒否したもの）、`Session`、`Unit` または `stage-level`、`Fingerprint` を運ぶ。対の `PLAN_APPROVAL_RECORDED` 行は `Override: yes` を運ぶ。同行するレシートは計画内容とステージ試行にだけ結ぶので、後の検査はそのソースを比較しない。打った依頼は一回限りで、コンダクターは提案も開始もしない |
+| `REVIEW_REQUESTED` | `tools/aidlc-log.ts` | コンダクターが `stage-protocol-reviewer.md` §12a のレビュアーを出すときに発火。ステージ必須の `review_artifact` スカラーが、レビュー対象の Markdown 出力を名指す。プラグインが足した出力と produces 順は変えられない。新しい `--unit` 依頼は、権威ある DAG のメンバか、いまの no-DAG 試行で一致する開いた / マージ確認済みのツール所有 Bolt 試行が証明した Unit を指名しなければならない。`AUDIT_MERGED` マージ証拠待ちの完了は、履歴無し Unit と同様に拒否する。安定したファイル身元スナップショット 1 つが、宣言した成果物すべてをディスパッチどおりに記録し（`Artifact Fingerprint`）、`workspace_requires` ステージの依頼時ワークスペースソースも記録する。行は `Request Id` を鋳造し、完了行とレビューレコードがそれをエコーする。コマンドの JSON は `requestId` と `reviewFile` を返す。レビュアーがレビューを書く `<record>/.aidlc-reviews/` の下のスロット。依頼がそのスロットを開き、同じイテレーションの以前の未完了ディスパッチが残した下書きを外す。`--retry-pending` は、成果物とソースがまだ一致するとき、元の結びと request id で未一致依頼を 1 本再発行する。request id またはソース結びの前に記録した依頼は、その 1 回のリトライでそれらを得て、`Upgrade: legacy-request` と印される。退役した付録プロトコルで書いた行は `Review Appendix Artifact`、`Review Appendix Offset`、`Review Appendix Prior Digest`、`Review Appendix Prior Length`、`Review Challenge` も運ぶ。読めるままで、そのような依頼の完了はそれらを変えずにエコーする |
+| `REVIEW_COMPLETED` | `tools/aidlc-log.ts` | 一致する正のイテレーション依頼のあとだけ発火。一貫した成果物スナップショット 1 つが、依頼したバイトを正確に再現しなければならない。レビュアーは成果物を書かないので、`Request Fingerprint` と `Artifact Fingerprint` は同じ身元。レビューは依頼のレビューファイル（または `--review-file`）から読み、Bun の Markdown パーサで検証する（`--verdict` に一致する描画判定ちょうど一つ、Reviewer 一つ、Iteration 一つ、後続の Markdown または生 HTML の H1/H2 無し。フェンス / インラインコードと HTML コメント内のリテラル例は権限を持たず、list / blockquote / table 入れ物は所有を鋳造できない）。同じロックしたトランザクションでレビューレコード `<record>/.aidlc-reviews/<stage>/stage/<attempt>/<iteration>.json` または `<record>/.aidlc-reviews/<stage>/units/<unit>/<attempt>/<iteration>.json` として書く。行はそれを名指し（`Review Record`）、バイトをピンし（`Review Record Digest`）、`Request Id` をエコーする。依頼時と完了のソース指紋は同じ Git 非依存の有界ファイルシステム身元を使い、一致しなければならない。このリリース周期では非推奨: 依頼後にレビュアーが `review_artifact` へ追記した終端 `## Review` 節からの判定はまだ受け付ける（その前のバイトが依頼したバイトで、依頼は付録を見ていない）。検証した節はレビューレコードへコピーする。リトライした未完了レビューは空のレビューレコードで `NOT-READY` を記録してよい。壊れた行は無視し、pending 依頼を消費しない |
 | `PIPELINE_LINK_COMPLETED` | `tools/aidlc-log.ts` | 宣言したパイプラインリンクが 1 本返ったあとに発火。`Stage`、`Link`、`Position k/N` を運ぶ。複数リポジトリ鎖は `Repo` も、隔離実行は `Workflow=single-stage:<slug>` も運ぶ。ツールはそのレシート範囲内の未宣言・重複・順不同リンクを拒否する。メインワークフローの gate-start、承認、advance、finalize、ワークフロー完了は隔離行を無視し、スキャンしたリポジトリのいまの試行リンクレシートをすべて要求する |
 
 ### ユニットの寿命（インラインのユニットごと Construction ステージ）
@@ -283,13 +294,17 @@ report awaiting-approval  →  [?] AwaitingApproval
 | `UNIT_GATE_RHYTHM_SET` | `tools/aidlc-state.ts` | `set-unit-gate-rhythm per-stage\|unit-end`。team モードのみ |
 | `REVIEW_CLASS_CHANGED` | `tools/aidlc-utility.ts` | `config set review <value>` / `config-change --review` / 結合した `scope-change --review` が実行ごとのレビュー上書きをセットまたはクリアした |
 | `RECOMPOSED` | `tools/aidlc-utility.ts` | `recompose` サブコマンド — 適応コンポーザーの飛行中計画の再形成（pending ステージ接尾辞が監査ロックの下で反転） |
+| `CHANGE_CONTROL_SET` | `tools/aidlc-lib.ts` | インテントの Change Control 値が動いた。`change-control <strict\|relaxed>` 動詞（`/aidlc --change-control` と平文チャット依頼の裏）、スコープ供給値を新しいスコープの既定へ運ぶ `scope-change`、またはメモリ層の編集を観測した統治チェックポイント。フィールド: `Old Value`、`New Value`、`Source`（`you`、`scope <name>`、`<layer>.md`） |
+| `CHANGE_ACCEPTED` | `tools/aidlc-lib.ts` | 統治チェックポイント（plan-approval のソースドリフト、レビューレシートの内容変化、要約確認の認可）が `relaxed` の下で入力変化を受け入れ、続けた。フィールド: `Stage`、任意の `Unit`、`Checkpoint`、`Changed`、`Recorded`、`Current`、`Details`（人が聞く 1 行）。別の変化につき 1 行。同じ値は二行目を決して出さない |
+
+Change Control は、人の承認または確認のあとの入力変化の帰結を決める（`strict` は既存の手当てで承認を再開し、`relaxed` は変化を記録して続ける）。ゲートを外さず、レビュアーの判定を変えず、証拠を決して消さない。値を読むのは、そのような変化に当たるところ（統治チェックポイント 3 つ）、`change-control` 動詞、`intent-create`、`/aidlc --status` だけ。変化に当たらない検査は何も読まない。無効なメモリ `Mode:` 値は、それらの読みの各々でファイルと許す値 2 つを名指す検証エラーなので、入力が変わっていないステージはそれで止まらない。
 
 ### 成果物
 
 | イベント | 発行元 | 注記 |
 |---|---|---|
-| `ARTIFACT_CREATED` | `hooks/aidlc-write-audit-log.ts` | 新規パスへの書き込み — `mtimeMs == birthtimeMs` の stat 検査で UPDATED と区別 |
-| `ARTIFACT_UPDATED` | `hooks/aidlc-write-audit-log.ts` | 既存ファイルを上書きする Edit ツールまたは Write |
+| `ARTIFACT_CREATED` | `hooks/aidlc-write-audit-log.ts` | 新規パスへの書き込み — `mtimeMs == birthtimeMs` の stat 検査で UPDATED と区別。書いたステージと Unit にアクティブな要約確認があるとき `Summary Authorization Id` を運ぶので、完了は出力がいまの確認の子孫かを問える |
+| `ARTIFACT_UPDATED` | `hooks/aidlc-write-audit-log.ts` | 既存ファイルを上書きする Edit ツールまたは Write。`ARTIFACT_CREATED` と同じ `Summary Authorization Id` スタンプ |
 | `ARTIFACT_REUSED` | `tools/aidlc-state.ts` | `reuse-artifact` サブコマンド — keep / modify / redo 判断。任意の `Repo` が証拠を登録リポジトリ 1 つに範囲付け、任意の `--single` が開いた合成試行に結ぶ。ただしそのパイプライン免除を与えるのは、権威ある成果物一式が揃い、まだ `CURRENT` の隔離 Reverse Engineering ストアがある `keep` だけ |
 
 ### Construction ボルト
@@ -314,6 +329,7 @@ report awaiting-approval  →  [?] AwaitingApproval
 | `REVIEWER_SCOPE_BLOCKED` | `hooks/aidlc-reviewer-scope.ts` | ユニットごとのレビュアーのツール呼び出しが、兄弟ユニットの `construction/` パスへ手を伸ばしたとして拒否された（レビュアーモジュールの読み範囲境界）。拒否につき 1 行 |
 | `REVIEW_FREEZE_BLOCKED` | `hooks/aidlc-review-freeze.ts` | ゲート前に新しい終端レビューレシート（有効クラス下の READY または終端 NOT-READY）を無効にするファイルツールまたはシェルの `produces[]` 書きが拒否された。拒否につき 1 行 |
 | `PLAN_APPROVAL_BLOCKED` | `hooks/aidlc-plan-approval-guard.ts` | アクティブユニットまたはゼロ Unit ステージ対象に、いまの指紋付き計画、テスト指示、Testing Contract、明示承認、一致する worker-brief 印が無いため、コード生成の developer-agent ディスパッチまたはワークスペース変異が拒否された。拒否につき 1 行 |
+| `GUARD_DISABLED` | `hooks/aidlc-plan-approval-guard.ts` | ワークフローがあるあいだ決定論的オフスイッチ環境変数がセットされていたため、ツール呼び出しが Plan Approval ガードを通過した。`Guard`（`plan-approval-guard`）と `Tool` を運ぶ。連続につき 1 行。アクティブシャードの最新行が、すでに同じガードのこのイベントでないときだけ追記する |
 
 ### 診断とワークスペース
 
@@ -361,7 +377,7 @@ v0.4.0 向け先行登録。3 つの `WORKTREE_*` 行は `aidlc-worktree.ts` と
 | `STATE_FORKED` | `tools/aidlc-state.ts` | ボルト開始で状態ファイルを worktree へ fork（サブコマンド: `fork`） |
 | `STATE_MERGED` | `tools/aidlc-state.ts` | ゲート承認で worktree の状態をメインへマージ。防御の深さとしてアルファベット slug のタイブレーク（サブコマンド: `merge`） |
 | `AUDIT_FORKED` | `tools/aidlc-audit.ts`（`audit-fork`） | ボルト開始で監査ログを worktree へ fork。意図の監査 — 発行がバイトコピーより先 |
-| `AUDIT_MERGED` | `tools/aidlc-audit.ts`（`audit-merge`） | ゲート承認で worktree の監査エントリをメイン監査へ追記。ボルト内のエントリ順は保ち、ボルト横断の順はマージ完了順 |
+| `AUDIT_MERGED` | `tools/aidlc-audit.ts`（`audit-merge`） | ゲート承認で worktree の監査エントリをメイン監査へ追記。ボルト内のエントリ順は保ち、ボルト横断の順はマージ完了順。同じロックの下、どの行も着地する前に、差分の `REVIEW_COMPLETED` 行が名指すレビューレコードをメインインテントレコードへ運ぶ。同じ差分の `REVIEW_REQUESTED` 行から降りる完了だけ。シンボリックリンクを辿らず読み、ハードリンク、過大、ピンしたダイジェストにハッシュしないときは拒否し、すでに違うバイトで存在するレコードは上書きしない。レコードを運べないマージは拒否する |
 
 ### プラクティス
 
@@ -420,6 +436,14 @@ v0.5.0 マイルストーン 4 で先行登録。`MEMORY_EMPTY` 発行元はマ�
 | `SWARM_COMPLETED` | `tools/aidlc-swarm.ts` | バッチ内の全 Unit が終わった（収束または失敗）。バッチ閉鎖 |
 | `SWARM_DEGRADED` | `tools/aidlc-swarm.ts` | `AIDLC_USE_SWARM=1` が要求されたが Workflow ツールが使えなかった。コンダクターはサブエージェント床を走らせた |
 
+### コミット出自
+
+豊かにするイベントは 1 つ。`aidlc attest anchor` は、コミットがレビュー済みソースクレームの着地を観測したと記録します。関与したインテントごとに (commit, repo) につき 1 行。再アンカーでは重複排除し、同じ (commit, repo) をすでに結ぶ `SWARM_SOURCE_MERGED` レシートがあるときは飛ばします。`aidlc attest resolve` はこれらの行を決して読みません。帰属はコミットした内容の純粋関数なので、未アンカーのコミットも同じように解決します。[コミット出自の章](20-commit-provenance.md) を見てください。
+
+| イベント | 発行元 | 引き金 |
+|---|---|---|
+| `SOURCE_COMMITTED` | `tools/aidlc-attest.ts`（runAnchor — 明示 `anchor` 動詞、または `AIDLC_SESSION_ANCHOR=1` の下の任意セッション開始スイープ） | コミットの変化パスを、`anchor` 呼び出し（または任意セッション開始スイープ）がレビュー済みユニットへ帰属した |
+
 分類のどのイベントも、本物の発行元に裏付けられるか、次の消費者向けに `Reserved (v0.4.0 PR N)` / `Reserved (v0.5.0 PR N)` / `Reserved (v0.6.0 PR N)` と印されます。ドリフトテストは両方を強制します。`Reserved` の早期スキップは、セルが文字どおり "Reserved" を含むあいだだけです。消費 PR は、発行呼び出しを出荷する同じコミットで、本物の発行元ファイルパスに置き換えます。
 
 ---
@@ -460,6 +484,26 @@ DocumentKB イベントは順を逆にします。`aidlc-knowledge.ts` はコミ
 
 `SWARM_SOURCE_MERGED` は結果後の権限であり、意図の監査行ではありません。Git マージコミットが着地してもこの行を追記できないとき、ツールは worktree を保ち、再試行不可の手当て付きで `[merge-succeeded:<sha>]` を返します。再実行はソースを二度マージするので禁じます。ステージ試行をやり直すか、明示の人の承認のあとだけ `AIDLC_SKIP_SOURCE_FRESHNESS=1` を使ってください。行が着地し、あとの掃除だけが失敗したときは、同じ `aidlc-worktree merge` の再実行がその権限を検出し、掃除だけを行います。ソースを再適用せず、権限行を二度出しません。
 
+### 権限の不変条件 {#authority-invariants}
+
+エンジンが認可として読む成果物すべてを、二つの規則が統治します。Plan Approval のチャレンジ、応答、レシート、レビュアーレシート、ゲートと Unit ライフサイクルのレシート、アクティブディレクティブ印です。
+
+**照会は決して書かず、ガードは証拠を決して消さない。** `next`、Stop フックの `next` プローブ、`unit start` の経路検査、`/aidlc --status`、`--doctor`、`team-board` は照会です。エンジンの観測者二つ（Stop プローブと経路検査）は何も書きません。耐久書きのプリミティブにある型付きバリアは、到達した観測者を黙って権限を壊すのではなく、大きく失敗させます。ガードの唯一の動きは拒否です。拒否を表すためにレシート、チャレンジ、印を消しません。記録した判断を撤回するのは明示の人の判断（Request Changes）だけ、退役させるのは所有ツールだけです。
+
+**権限は内容と試行に結び、発行身元やイベント順には結びません。** レシートが有効なのは、対象、内容指紋、ステージ試行が生きた状態と一致するときです。どのディレクティブが質問を出したか、そのディレクティブを何回再発行したか、印の版、どの監査シャードが先に書かれたかは問題ではありません。この章がかつて述べ、どちらも外した反例は二つです。ディレクティブ再発行で権限世代を回し、誰も変えていない承認を、エンジンへの再問い合わせが無効にしたこと。公開経路から Plan Approval の実行時ディレクトリを消し、照会が読もうとした証拠を壊したこと。
+
+エンジンが状態比較で無視するフィールドは、見落としではなく意図した分類です。アクティブディレクティブが結ぶキャッシュ層投影と、[`11-contributing.md`](11-contributing.md#authority-policy) の貢献者の問いを見てください。
+
+### ガード入場と復旧の問い {#guard-admission-and-recovery-asks}
+
+拒否するガードは、コンダクターが解釈しなければならない文ではなく、型付き拒否を返します。コード、塞いだ動作、守る不変、人向けの 1 文、いまのライフサイクル状態から実行できる手当て（`in-progress`、`awaiting-approval`、`revising`、`completed`、`pending`、`skipped`。チーム Unit ならその Unit 自身のゲート状態）。どの手当ても `aidlc-lib.ts` の `GUARD_REMEDY_OPS` からの閉じた `op` を運びます（`present-approval-gate`、`request-review`、`start-recovery-review`、`apply-repairs-then-request`、`record-verdict`、`retry-pending`、`request-changes`、`redo-jump`、`restore-or-jump`、`restart-stage`、`change-scope`、`restore-scope`、`abort-bolt`、`repair-source-boundary`、`reconfirm-summary`、`unset-unattended`）。ルーティング判断は手当て文ではなく `op` を比べます。ディレクティブ契約は未知の `op` を拒否します。
+
+**ガードにつき述語は一つ、共有。** ライフサイクル動作のガード鎖は一度だけ列挙し（`aidlc-state.ts` の `admitStageAction`）、強制ハンドラとルーターの両方が呼びます。`report` と `next` は状態ツールを起こす前に、同じ状態スナップショットでそれを走らせるので、ルーターとツールが拒否について食い違えません。ガードが見る試行（予算、復旧スロット一つ、pending レビュー、要約・レビュー・ソース証拠がいまのバイトをまだ覆うか）は一箇所、`guardAttemptState` で、共有試行リデューサから組み立てます。
+
+**初出の規則は一つ、両方の現場。** 拒否は、初めて起きたときガード復旧の `ask` として描きます。ルーターはそれをディレクティブとして出します。強制ツールは人向けの文を出し、それから拒否の最終行として同じ問いを出します。ルーターはそれを、自分が出したはずのディレクティブへ戻します。ほかの gitignore 実行時ファイルの横の `.aidlc-guard-refusals/` レコードが、一つのガード状態（ステージ、Unit、ライフサイクル状態、試行フィールド、最新のセッション / ワークフロー / jump / 差し戻し境界、リソース指紋）の繰り返しを数えます。権限は持たず、観測者は書かずに読みます。実行できる手当ての無い拒否も問いのままです。手当て一覧が空の終端問いが状況を名指し、繰り返し上限を超えたらエスカレーション用のガード状態署名です。ここは `error` ディレクティブを決して出さず、黙って数えません。
+
+**人の選択は再問いを生き抜く。** ガード復旧の問いはアクティブディレクティブ印として公開します（`kind: "ask"`、`ask_type: "guard-recovery"`）。印は `remedies`、表示順の提示 `op` / `action` エントリを運びます。human-turn フックは、人の手当て選択をそれに記録します（`delivery: consumed`、`guard_recovery_response.status: awaiting-feedback`）。応答の `selection_sha256` と `selected_op` とともに。選択が未一致または曖昧なら `selected_op` は null。あとのフィードバックが応答を `status: ready` にします。変わらない状態、ゲート、順のある手当て `op` / `action` エントリから同じ問いを導く繰り返した `next` は、印を書き直さずに問いを返し、Stop フックは問いでターンを解放するので、人がすでに答えた質問をコンダクターが再提示するよう言われません。`reject` が許されるのは、`selected_op` が `request-changes` を記録し、一致する人のフィードバックが着いたあとだけです。`--feedback` はその人自身の言葉でなければならず、空白正規化して比べます。言い換えは拒否し、選択だけでは "ask what should change" で拒否します。`selected_op` の無いレガシー消費応答は認可として扱わず拒否します。問いは塞いだ対象を名指すので Unit を運んでよいです。差し戻しは報告経路が許すゲートを名指します。`Unit Ownership: team` の下では `--unit <name>`、ソロ所有ではステージだけ（`--unit` は拒否）。結びも同じ規則です。チームはステージと Unit を比べ、ソロはステージを比べます。ゲートの "Request Changes" 選択は大文字小文字、選択肢接頭辞、引用符、末尾句読点に寛容です。Plan Approval は正確なラベルを保ちます。それが偽造防止の結びだからです。
+
 ### 禁じる型
 
 LLM の散文から監査イベントを出さないでください。次の反パターンが、この再構成の理由です。
@@ -468,7 +512,7 @@ LLM の散文から監査イベントを出さないでください。次の反�
 - ステージファイルが書く `**Event**: STAGE_COMPLETED` の markdown ブロック — イベントはツールかフックの `appendAuditEntry` からだけ来る
 - フックが書く自由形式の `## Artifact Update` 節 — 正規の `ARTIFACT_CREATED` / `ARTIFACT_UPDATED` に置き換え済み
 
-公開 CLI は、このいちばん鋭い切片を機械的に強制します。`append` / `append-batch` は、エンジンのガードが認可証拠として読む権限付きレシートを拒否します（`STAGE_COMPLETED`、`HUMAN_TURN`、`GATE_APPROVED`、`GATE_REJECTED`、`QUESTION_ANSWERED`、`REVIEW_REQUESTED`、`REVIEW_COMPLETED`、`PIPELINE_LINK_COMPLETED`、`ARTIFACT_REUSED`、`SWARM_STARTED`、`SWARM_UNIT_CONVERGED`、`AUTONOMY_MODE_SET`、`UNIT_OWNERSHIP_SET`、`UNIT_GATE_RHYTHM_SET`、`UNIT_STARTED`、`UNIT_PAUSED`、`UNIT_RESUMED`、`UNIT_COMPLETED`、`UNIT_MERGED`、および 3 つの `DOCUMENT_*` 出自イベント — `aidlc-audit.ts` の `CLI_PROTECTED_EVENT_TYPES` 集合）。どのフィールド名も厳格な印字可能 1 行ラベル文法に一致しなければならず（`Event` は予約のまま）、値の行終端はエスケープされ、`append-raw` は分類イベント行や改行する見出しを拒否します。構造化レンダラが `Timestamp` と `Event` を排他所有するので、それが書くどのブロックもそれぞれちょうど一つ含みます。自由形式の `append-raw` ブロックはその保証の外です（発行元の `**Timestamp**:` 行を運び、`**Event**:` 行は無く、本文は原文のまま）。`Timestamp` は互換のため一般 `--field` 解析では受け付けますが、渡した値は意図的に無視します。park / unpark ほかの所有ツールは渡しません。歴史的シャードは書き直しません。ブロック認識の読み手に移行は不要です。平坦な読み手は `---` で割り、各ブロックの最初の発行元所有時刻を使うか、古い重複時刻フィールドを重複排除しなければなりません。所有ツールとフックはライブラリ import（`appendAuditEntry`）経由で発行し、床は触れません。所有発行元を模擬するテストフィクスチャは `AIDLC_ALLOW_DIRECT_AUDIT_EVENTS=1` をセットします。
+公開 CLI は、このいちばん鋭い切片を機械的に強制します。`append` / `append-batch` は、エンジンのガードが認可証拠として読む権限付きレシートを拒否します（`STAGE_COMPLETED`、`HUMAN_TURN`、`GATE_APPROVED`、`GATE_REJECTED`、`QUESTION_ANSWERED`、`PLAN_APPROVAL_RECORDED`、`REVIEW_REQUESTED`、`REVIEW_COMPLETED`、`PIPELINE_LINK_COMPLETED`、`ARTIFACT_REUSED`、`SWARM_STARTED`、`SWARM_UNIT_CONVERGED`、`AUTONOMY_MODE_SET`、`UNIT_OWNERSHIP_SET`、`UNIT_GATE_RHYTHM_SET`、`UNIT_STARTED`、`UNIT_PAUSED`、`UNIT_RESUMED`、`UNIT_COMPLETED`、`UNIT_MERGED`、3 つの `DOCUMENT_*` 出自イベント、およびコミット出自アンカー `SOURCE_COMMITTED` — `aidlc-audit.ts` の `CLI_PROTECTED_EVENT_TYPES` 集合）。どのフィールド名も厳格な印字可能 1 行ラベル文法に一致しなければならず（`Event` は予約のまま）、値の行終端はエスケープされ、`append-raw` は分類イベント行や改行する見出しを拒否します。構造化レンダラが `Timestamp` と `Event` を排他所有するので、それが書くどのブロックもそれぞれちょうど一つ含みます。自由形式の `append-raw` ブロックはその保証の外です（発行元の `**Timestamp**:` 行を運び、`**Event**:` 行は無く、本文は原文のまま）。`Timestamp` は互換のため一般 `--field` 解析では受け付けますが、渡した値は意図的に無視します。park / unpark ほかの所有ツールは渡しません。歴史的シャードは書き直しません。ブロック認識の読み手に移行は不要です。平坦な読み手は `---` で割り、各ブロックの最初の発行元所有時刻を使うか、古い重複時刻フィールドを重複排除しなければなりません。所有ツールとフックはライブラリ import（`appendAuditEntry`）経由で発行し、床は触れません。所有発行元を模擬するテストフィクスチャは `AIDLC_ALLOW_DIRECT_AUDIT_EVENTS=1` をセットします。
 
 `tests/integration/t48-audit-event-emitters.test.ts` のドリフトテストが、この章の表とコードのドリフトを捕えます。表のどのイベントも、宣言した発行元ファイルに一致する `appendAuditEntry(..., "EVENT", ...)` 呼び出しが要り、コードベースのどの発行呼び出し現場も表に現れなければなりません。テストは、削除したイベントの蘇生と、対の不変（例: `handleApprove` は `GATE_APPROVED` と `STAGE_COMPLETED` の両方を出さなければならない）も守ります。
 
@@ -483,6 +527,7 @@ LLM の散文から監査イベントを出さないでください。次の反�
 - イベントを足す → `aidlc-audit.ts` の `VALID_EVENT_TYPES` に足し、発行元を足し、上の適切な表に足す。
 - イベントを消す → `VALID_EVENT_TYPES` から外し、発行元を外し、ここの行を外し、コードベースを grep して古い散文やテストを探す。
 - 発行元ファイルを改名する → それを指すすべての表行の Emitter 列を更新する。
+- 指紋、世代、またはレシート身元へ入力を足す → その入力が検出する人に見える変化を、ここの表行と [`11-contributing.md`](11-contributing.md#authority-policy) の Authority Policy チェックリストに名指す。人の動作が変えない入力は身元に入れない。
 
 ---
 

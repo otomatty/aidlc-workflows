@@ -1,6 +1,6 @@
 # opencode で AI-DLC を動かす
 
-`dist/opencode/` は、フレームワークのハーネス配布の一つで、オープンソースの **opencode** ハーネス（opencode.ai）向けです。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。この木は `core/` + `harness/opencode/` から `bun scripts/package.ts opencode` で **生成** されます。手で編集しないでください（ドリフト検査が CI で落ちます）。
+opencode ランタイムは、フレームワークのハーネス配布の一つで、オープンソースの **opencode** ハーネス（opencode.ai）向けです。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。ソース／開発用の木は `core/` + `harness/opencode/` から `bun scripts/package.ts opencode` で、無視されるローカル `dist/opencode/` へ **生成** されます。手で編集しないでください。
 
 ## 配置: ドットディレクトリは意図して 2 つ
 
@@ -9,31 +9,47 @@ opencode は `.opencode/tools/` と `.opencode/tool/` の下のすべての `*.t
 - **`.aidlc/`** — AIDLC のエンジントリー（ツール、フック、スキル、エージェント、ナレッジ、スコープ、センサー、aidlc-common）。opencode はここを走査しません。出荷の `opencode.json` が `skills.paths: [".aidlc/skills"]` を登録するので、オーケストレータスキルと生成ランナーはそこで見つかります。
 - **`.opencode/`** — ネイティブに消費される面だけ。ペルソナサブエージェント 14 体（`agents/*.md`、`mode: subagent`）、`/aidlc` コマンド（`command/aidlc.md`）、フックアダプタプラグイン（`plugin/aidlc-opencode-adapter.ts`。opencode が自動発見）。
 
-<a id="prerequisites"></a>
-
 ## 前提条件
 
 - **opencode ≥ 1.17** — この導入が頼るプラグインフック面（`tool.execute.before`、`tool.execute.after`、`chat.message`、`session.idle`、`experimental.session.compacting`）と、プロジェクトローカルのスキル／エージェント発見。確認は `opencode --version`。
-- **bun** — どのハーネスでも同じです。ツールとフックはすべて bun で走ります。アダプタプラグインは bun を `PATH` から解決し、次に `~/.bun/bin/bun` です。
+- **bun** は、ソース／開発用の `dist/` 投影を生成または走らせるときだけです。ネイティブ導入と版付きリリースランタイムは、入れた `aidlc` 実行ファイル経由で配送します。
 - **モデルプロバイダ** — 出荷のプロジェクト `opencode.json` はセッションモデルをピンしません。グローバルの opencode 設定が供給します。ティア付きペルソナは `amazon-bedrock/global.anthropic.claude-sonnet-4-6` をピンします。プロバイダが違うときは、プロジェクトの `opencode.json` でエージェントごとに上書きしてください。
 
 ## インストール
 
-下のコピーは、[aidlc-workflows](https://github.com/awslabs/aidlc-workflows) リポジトリを `main` ブランチで clone した場所から実行します:
+### ネイティブチャネル（推奨）
 
 ```bash
-git clone --branch main https://github.com/awslabs/aidlc-workflows.git
-cd aidlc-workflows
+tmp="$(mktemp -d)"
+curl -fsSL \
+  https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.sh \
+  -o "$tmp/install.sh"
+sh "$tmp/install.sh"
+rm -rf "$tmp"
+cd your-project
+aidlc config
+aidlc doctor
+opencode
 ```
+
+インストーラは、リリースのメタデータ、実行ファイル、全ハーネスのランタイムアーカイブを、公開された SHA-256 チェックサムに対して検証します。入れたランタイムに Bun、Node.js、Git は不要です。ハーネスの選択は `aidlc config` で行います。
+
+Windows では `install.ps1` をダウンロードし、`& $installer` で走らせます。対話実行ではフラグを省略できます。リダイレクトした入力、`pwsh -NonInteractive`、`--yes`、`--json`、`--quiet` ではフラグが要ります。エアギャップのパッケージでは、Unix は `install.sh --from <release-directory> --offline`、Windows は `& $installer -From <release-directory> -Offline` です。
+
+`aidlc config` は `.aidlc/`、`.opencode/`、ワークスペースシェル、`AGENTS.md`、管理対象の `.gitignore` ブロック、`opencode.json` を投影します。生成した設定はスキルと方法論ファイルを発見し、直接の `aidlc engine *` コマンドを許可します。ほかのシェルコマンドは聞いたままです。プロジェクトで opencode を始め、`/aidlc --doctor` を走らせ、続けて `/aidlc` と作りたいものを。
+
+### 版付きの手動コピー（代替）
+
+特定リリースの `aidlc-runtime-X.Y.Z.tar.gz` を、[Install and Lifecycle: コピー経路](../18-install-and-lifecycle.md#コピー経路) のとおりダウンロードして展開し、`RUNTIME_ROOT` を展開した `runtime/` ディレクトリにします。
 
 1. 配布をプロジェクトへコピーします:
 
    ```bash
-   cp -r dist/opencode/.aidlc/    your-project/.aidlc/
-   cp -r dist/opencode/.opencode/ your-project/.opencode/
-   cp -r dist/opencode/aidlc/     your-project/aidlc/      # the workspace shell — a sibling of .aidlc/, not inside it
-   cp dist/opencode/opencode.json your-project/opencode.json  # or merge into yours
-   cp dist/opencode/AGENTS.md     your-project/AGENTS.md      # or merge into yours
+   cp -r "$RUNTIME_ROOT/opencode/.aidlc/"    your-project/.aidlc/
+   cp -r "$RUNTIME_ROOT/opencode/.opencode/" your-project/.opencode/
+   cp -r "$RUNTIME_ROOT/opencode/aidlc/"     your-project/aidlc/      # the workspace shell — a sibling of .aidlc/, not inside it
+   cp "$RUNTIME_ROOT/opencode/opencode.json" your-project/opencode.json  # or merge into yours
+   cp "$RUNTIME_ROOT/opencode/AGENTS.md"     your-project/AGENTS.md      # or merge into yours
    ```
 
    `opencode.json` は欠かせないブロックを 3 つ持ちます。`skills.paths`（`.aidlc/skills` からのスキル発見）、`instructions`（方法論ツリーの include — `/aidlc space <name>` が差し替える）、AIDLC の bash エントリポイントと `.aidlc/tools/`・`.aidlc/hooks/` 下の編集に対する権限規則。既存の `opencode.json` や `opencode.jsonc` へマージするときは、3 つとも残してください。アダプタが権限境界を強制します。対象はパッケージした木から埋め込んだエントリポイントで、連鎖・リダイレクト・展開・コマンド置換の無い直接コマンド 1 つとして起動する必要があります。エンジンコードの編集は承認を聞きます。
@@ -43,6 +59,19 @@ cd aidlc-workflows
 3. プロジェクトで opencode を始め、`/aidlc --doctor` を走らせ、続けて `/aidlc` と作りたいものを。
 
 opencode には、セッション開始フックが注入する文脈の経路が無いので、素の `/aidlc` 起動ではスキルが読み取り専用の status 探査を一度します。既存のワークフローには標準の Resume / Redo / Jump / Start Fresh メニューが出ます。`/aidlc --resume` は探査もメニューも飛ばして直接続けます。
+
+版付きランタイムはネイティブの `aidlc` コマンドを使います。Bun 形の投影が要るフレームワーク開発者は、リポジトリを clone し、`bun install --frozen-lockfile` と `bun scripts/package.ts` を走らせ、無視されるローカル `dist/opencode/` 出力を使えます。
+
+## 更新と版のずれ
+
+`aidlc update` はマシンのランタイムを更新し、プロジェクトは書き換えません。`aidlc doctor` は、選んだエンジンと違うプロジェクトスタンプを出します。ワークフローのあいだに、刷新をプレビューして適用します:
+
+```bash
+aidlc config --dry-run
+aidlc config
+```
+
+config は管理対象のルートブロックとユーザー所有ファイルを残し、ローカルのフレームワーク編集を衝突として出します。`opencode.json` はファイル全体の統合なので、ローカル編集は上書きせず衝突として残します。いずれかのワークフローがアクティブなあいだは刷新を拒否します。先にワークフローを完了してください。アップグレードとロールバックは、プロジェクトを触らないので、ワークフロー中でも安全です。
 
 ## このハーネスで違うところ
 
@@ -59,7 +88,8 @@ opencode には、セッション開始フックが注入する文脈の経路�
 ## 導入の確認
 
 ```bash
-bun .aidlc/tools/aidlc-utility.ts doctor    # all checks pass on a fresh copy
+aidlc doctor                               # native install
+bun .aidlc/tools/aidlc-utility.ts doctor   # source/development copy
 opencode run --command aidlc -- "--status"  # /aidlc --status through the harness
 ```
 

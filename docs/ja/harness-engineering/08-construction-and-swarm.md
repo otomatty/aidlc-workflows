@@ -135,6 +135,6 @@ Code Generation のスウォームは計画を迂回しません。`prepare` の
 
 ## 次
 
-- **[新しいハーネスへの移植](09-porting-to-a-new-harness.md)** — このガイドの頂点。`core/` のデータ面を全部形作ったあとの最後の手順は、そのコアを *新しい* CLI へ焼くことです。`harness/<name>/` ディレクトリ 1 つ、マニフェスト 1 行、フックアダプタ、バイト一致の門。
+- **[新しいハーネスへの移植](09-porting-to-a-new-harness.md)** — このガイドの頂点。`core/` のデータ面を全部形作ったあとの最後の手順は、そのコアを *新しい* CLI へ焼くことです。`harness/<name>/` ディレクトリ 1 つ、マニフェスト 1 行、フックアダプタ、パッケージ決定論の門。
 - 形を作るデータ面の地図全体は [ハーネスエンジニアガイドの概観](00-overview.md) へ。
 - コード層のスウォーム、エンジン、ボルト DAG 契約は [Developer Reference § Skill System](../reference/17-skill-system.md)。Construction を形作ることがデータ編集で終わり、コード変更になる線です。

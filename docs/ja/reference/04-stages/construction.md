@@ -474,11 +474,11 @@ NFR 要件を具体的な設計パターンとアーキテクチャ解へ訳し�
 
    ユニットテスト指示の要約を、計画の要約と一緒に出します。
 
-3. **Plan Approval** -- `code-generation-plan.md`、その Testing Contract、`unit-test-instructions.md` の承認を求めます。改訂では、先に以前の `[Answer]:` を空へ戻します。両方のファイルが最終になったあと、ユニットディレクティブなら `aidlc-testing-posture.ts fingerprint --unit <unit>`、ゼロユニットのステージ単位作業なら `aidlc-testing-posture.ts fingerprint` を走らせます。そのあと解決したレコードディレクトリに `code-generation-questions.md` を作る、またはリセットし、その `[Approval Fingerprint]`、**Plan Approval** 質問、空の `[Answer]:` を入れます。構造化した質問として描き、ターンを止めます:
+3. **Plan Approval** -- `code-generation-plan.md`、その Testing Contract、`unit-test-instructions.md` の承認を求めます。改訂では、先に以前の `[Answer]:` を空へ戻します。両方のファイルが最終になったあと、ユニットディレクティブなら `aidlc-testing-posture.ts fingerprint --unit <unit>`、ゼロユニットのステージ単位作業なら `aidlc-testing-posture.ts fingerprint --stage-level` を走らせます。そのあと解決したレコードディレクトリに `code-generation-questions.md` を作る、またはリセットし、コマンドが出すタグ両方（`[Approval Fingerprint]` と `[Planned Source]`）、**Plan Approval** 質問、空の `[Answer]:` を入れます。構造化した質問として描き、ターンを止めます:
    - "Approve Plan" -- コード生成へ進む
    - "Request Changes" -- 計画を改訂する
 
-   タグは人が答えたあとだけ埋めます。変更要求は記録し、必要に応じて両方のファイルを改訂し、契約／フィンガープリントを再生成し、再プロンプトの前に Plan Approval タグをリセットします。承認後の計画／指示変更、または Testing Posture／スコープ／戦略／種別の変更はフィンガープリントを無効にし、承認を再開します。転送ループの継続は承認ではありません。
+   タグは人が答えたあとだけ埋めます。変更要求は記録し、必要に応じて両方のファイルを改訂し、契約／フィンガープリントを再生成し、再プロンプトの前に Plan Approval タグをリセットします。承認後の計画／指示変更、または Testing Posture／スコープ／戦略／種別の変更はフィンガープリントを無効にし、承認を再開します。ワークスペースのソース変化や新しいステージ試行も同じです。`next` の再実行、または同じ対象と試行へのディレクティブ再発行は、開き直しません。転送ループの継続は承認ではありません。
 
 #### PART 2 -- Generation (Steps 4-7)
 
@@ -488,13 +488,11 @@ NFR 要件を具体的な設計パターンとアーキテクチャ解へ訳し�
    Task ツールで aidlc-developer-agent サブエージェント（subagent_type="aidlc-developer-agent"）へ委譲します。
 
    **サブエージェントへ渡す文脈:**
-   - プロンプトの先頭行として、正確な対象マーカ: ユニット作業なら `AIDLC-UNIT: <directive.unit>`、ゼロユニットディレクティブなら `AIDLC-STAGE: code-generation`。文脈依存は追加の対象マーカを受けません。
-   - 2 行目として、承認した計画からの `AIDLC-TESTING-CONTRACT: <contract_sha256>`。派遣ガードは欠けた、違う、古いハッシュを拒否します。
+   - まず原文のまま、`aidlc-testing-posture.ts brief --unit <unit>`（または `--stage-level`）の出力。先頭行は正確な対象マーカで、ユニット作業なら `AIDLC-UNIT: <directive.unit>`、ゼロユニットディレクティブなら `AIDLC-STAGE: code-generation`。2 行目は承認した計画からの `AIDLC-TESTING-CONTRACT: <contract_sha256>`。派遣ガードは欠けた、違う、古いハッシュを拒否します。文脈依存は追加の対象マーカを受けません。
    - `agents/aidlc-developer-agent.md` のリードエージェントペルソナと `.claude/knowledge/aidlc-developer-agent/` のナレッジ（サブエージェントは会話履歴に届かないのでプロンプトへ入れる）
    - いまのユニットだけの設計成果物（全ユニットではない）
    - Inception フェーズの各成果物の 1–2 行要約とファイルパス（要件要約、ストーリー要約、アプリ設計要約） — サブエージェントは全文が要れば特定ファイルを Read できます
-   - 承認した code-generation-plan.md（全文）
-   - 承認した unit-test-instructions.md（全文）
+   - 承認した計画と承認した unit-test-instructions.md。brief の出力が、フィンガープリントが結んだとおりにすでに持っています。計画は末尾の `## Review` 付録を除き、タスクマーカをリセットし、空白を正規化したもの。指示はバイト一致。フィンガープリントは付録を除くので、仕事としては承認されていません。派遣ガードは、それを引用する引き渡しを拒みます
    - プロジェクトワークスペースの詳細（aidlc-state.md からの言語、フレームワーク、慣習）
    - 各計画ステップを順に実行し、完了したらチェックボックスを付ける指示
    - 承認した Testing Contract が権威です。サブエージェントはメモリを独自に再解決せず、承認した TDD、BDD、ATDD、test-after、または custom/mixed プロファイルを正確に実行します
@@ -624,7 +622,7 @@ NFR 要件を具体的な設計パターンとアーキテクチャ解へ訳し�
 
     **ループバック再生の振り分け:** Code Generation がユニットライフサイクルレシートを一度も使っていなければ、残した成果物はすべて覆った `gate: true` の速い道を取れます。そのゲートの前に、計画した直しと決定論的な Modify／Keep 判断を適用します。ライフサイクル行が 1 つでもあれば、レシートモードは粘り、ジャンプはユニットごとの作業を再発行します。`unit start` / `unit complete` を再発行し、対象ユニットへ Modify、残りへ Keep を適用し、宣言したレビュアーをユニットごとに走らせます。どちらの道も、settle／承認ゲートの前に、適用する全ユニットへいまの試行の新しい `REVIEW_COMPLETED` を MUST 記録します。`STAGE_JUMPED` が以前のレビューをすべて無効にするからです。unit-major では自律スウォームは発火せず、再生は直列のユニットごとウォークに従い、追加の人のターンはまだ要りません。
 
-    再生はすでに承認した Code Generation 計画を直します。その Plan Approval `[Answer]:` を残し、差分を Loop-Back Log に記録し、gated の "Retry with fix" を、改訂した進め方への人の再承認として扱います。
+    再生は新しいステージ試行の下で Code Generation 計画を直すので、以前の承認は効きません。差分を Loop-Back Log に記録し、Plan Approval `[Answer]:` をリセットし、フィンガープリントを再生成し、直し生成の前に decision / human-turn / answer のレシート列を全部もう一度走らせます。gated の "Retry with fix" はジャンプを認可するだけであり、改訂した計画の承認ではありません。
 
     **スウォームの安い道:** ジャンプは新しい正確なステージ試行の `Run floor` 境界トークンを作るので、古い収束行は数えられません。古い worktree／ブランチを捨て、新しい `prepare` を走らせます。`finalize` がいまの prepare スタンプを要するので、新しい試行へ採用できません。先に `check` を走らせます。緑のユニットはビルダターンを飛ばせますが、`finalize --claimed` に入る前に、新しい worktree で終端のいまの試行のレビュアーレシートがまだ要ります。`finalize` はそのレシートのいまの成果物フィンガープリントと試行スタンプの両方を検証します。
 

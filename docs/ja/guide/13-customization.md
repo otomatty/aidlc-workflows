@@ -32,7 +32,7 @@ cp .claude/settings.local.json.example .claude/settings.local.json
 
 配布エージェントは `tier:`（`judgment` | `balanced` | `templated`）を持ち、ビルドが各ハーネスのネイティブな model / effort キーへ投影します。judgment はセッションのモデルと effort を継ぎ、balanced と templated は Claude Code・Codex・opencode で中規模モデルを `medium` effort に固定します。いまの投影結果は同じですが、ティアを分けてあるので、どちらかだけ後から変えられます。Kiro、Cursor、Copilot では全ティアがセッションモデルを継ぎます。投影表は [Agent System](../reference/05-agent-system.md) です。
 
-インストール済みのコピーで **1 体だけ** 変えたいときは、投影先を直接編集します。例: Claude なら `.claude/agents/aidlc-*-agent.md` の frontmatter に `model: opus`。Kiro はハーネスで面が違います。Kiro CLI は `.kiro/agents/aidlc-*-agent.json` に `"model"`、Kiro IDE は `.kiro/agents/aidlc-*-agent.md` の frontmatter に `model:`（エージェント JSON は CLI 専用で、IDE は起動時に `.md` の frontmatter を読む）。どちらも、その環境で有効なモデル ID を使ってください。Kiro のエージェントはモデル固定なしで出荷するので、既定ではセッションモデルを継ぎます。編集は `dist/<harness>/` を再コピーするまで残ります。ソースから自分の配布を焼くときに **全エージェント** を抑えたいなら、`core/memory/org.md` / `project.md` の frontmatter に `tier_cap:` を書くか、パッケージャを `AIDLC_TIER_CAP=<tier>` で回します。どちらも `bun scripts/package.ts` のパック時ノブで、実行時の設定ではありません。
+インストール済みのコピーで **1 体だけ** 変えたいときは、投影先を直接編集します。例: Claude なら `.claude/agents/aidlc-*-agent.md` の frontmatter に `model: opus`。Kiro はハーネスで面が違います。Kiro CLI は `.kiro/agents/aidlc-*-agent.json` に `"model"`、Kiro IDE は `.kiro/agents/aidlc-*-agent.md` の frontmatter に `model:`（エージェント JSON は CLI 専用で、IDE は起動時に `.md` の frontmatter を読む）。どちらも、その環境で有効なモデル ID を使ってください。Kiro のエージェントはモデル固定なしで出荷するので、既定ではセッションモデルを継ぎます。編集は `aidlc config` がそのフレームワーク所有ファイルを刷新するか、同じ版の `runtime/<harness>/` リリースから手で置き換えるまで残ります。ソースから自分の配布を焼くときに **全エージェント** を抑えたいなら、`core/memory/org.md` / `project.md` の frontmatter に `tier_cap:` を書くか、パッケージャを `AIDLC_TIER_CAP=<tier>` で回します。どちらも `bun scripts/package.ts` のパック時ノブで、実行時の設定ではありません。
 
 ---
 
@@ -99,6 +99,38 @@ cp .claude/settings.local.json.example .claude/settings.local.json
 
 ---
 
+<a id="change-control"></a>
+
+## Change Control
+
+Change Control は設定 1 つ、値は `strict` と `relaxed` の 2 つです。すでに承認または確認したものが、下で変わっていたときの扱いを決めます。コード計画を承認したあとにソースが動いた、レビュー済み文書がレビュー後に編集された、いまの要約確認無しで出力が保存された、などです。
+
+- `strict` は承認を開き直します。実行は、何が変わったかを 1 文で名指しして止まり（例: `2 files changed since this plan was approved: src/api.ts, src/db.ts. Look them over and approve the plan again to continue.`）、もう一度尋ねます。
+- `relaxed` は進みます。変化は監査証跡に `CHANGE_ACCEPTED` として 1 行残り、1 行で知らせ（`... Continuing (Change Control: relaxed). Say 'review the plan again' to reopen approval.`）、実行は続きます。承認とその証拠は消しません。そのまま残します。
+
+どちらの値もゲートは外しません。承認の質問は毎回出ます。レビュアーの判定は変わりません。承認した計画そのもの（またはテスト指示、Testing Contract）を編集すると、どちらの値でも承認が開き直ります。Change Control が決めるのは、入力変化の帰結だけです。フレームワークが気づくかどうかではありません。
+
+### スコープごとの既定
+
+| スコープ | 既定 |
+|-------|---------|
+| enterprise, security-patch, infra | strict |
+| poc, express, classic, bugfix, feature, mvp, refactor, workshop | relaxed |
+
+compose したスコープは、ゲートでコンポーザーが提案し人が承認した値を持ちます。一致した配布スコープは、そのスコープの既定です。
+
+### 設定する場所は 3 つ
+
+1. **スコープファイル。** `scopes/aidlc-<name>.md` の `change_control: strict | relaxed` が、そのスコープの新しいインテントの開始値です（無いときは strict）。
+2. **メモリ。** `aidlc/spaces/<space>/memory/org.md`、`team.md`、または `project.md` の `## Change Control` に 1 行 `Mode: strict` があると、リポジトリの全員に strict が効きます。スコープ既定にも、インテント単位の切り替えにも勝ち、切り替えはファイルを名指しして拒まれます。`Mode: relaxed` または空の節は何も変えません。それ以外の値は、ファイルと許される 2 値を名指しする検証エラーです。
+3. **インテント。** `/aidlc --change-control strict|relaxed`、または「ファイルが変わっても再承認を聞かないで」のような平文の依頼が、走っている仕事の値を設定します（`/aidlc --status` は `Change Control: relaxed (set by you)` と出します）。
+
+### 値の置き場所
+
+解決した値は、インテント作成時に `aidlc-state.md` へ `- **Change Control**: <value> (from scope <name>)` として書かれ、フラグまたはチャット依頼で書き直され、値だけを読みます。状態ファイルはインテントと一緒にコミットするので、セッションを越えて残り、同僚も同じ値を見ます。走っているインテントの実効値を変えるメモリ編集は、統治された検査の次の実行で、そのメモリファイルを名指しする `CHANGE_CONTROL_SET` 行として残ります。この欄が無い昔のインテントは、設定するまで `strict (not set)` です。無効な欄は `/aidlc --change-control strict|relaxed` で直すまで使えません。次のインテントは、またそのスコープの既定から始まります。
+
+---
+
 ## ステージのカスタマイズ
 
 各ステージは `.claude/aidlc-common/stages/[phase]/` の独立した `.md` です。ステージファイルが書くのは次です。
@@ -142,7 +174,7 @@ cp .claude/settings.local.json.example .claude/settings.local.json
 ```json
 "statusLine": {
   "type": "command",
-  "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/hooks/aidlc-statusline.ts\""
+  "command": "bun \"$CLAUDE_PROJECT_DIR/.claude/tools/aidlc.ts\" engine statusline"
 }
 ```
 

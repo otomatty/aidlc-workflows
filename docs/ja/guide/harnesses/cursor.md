@@ -1,6 +1,6 @@
 # Cursor で AI-DLC を動かす
 
-`dist/cursor/` は、フレームワークのハーネス配布の一つで、対象は [Cursor](https://cursor.com) です。1 本の木が **Cursor IDE** と **Cursor CLI**（`agent`）の両方に効きます。読む `.cursor/` の発見は同じです。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。この木は `core/` + `harness/cursor/` から `bun scripts/package.ts cursor` で **生成** されます。手で編集しないでください（ドリフト検査が CI で落ちます）。
+Cursor ランタイムは、フレームワークのハーネス配布の一つで、対象は [Cursor](https://cursor.com) です。1 本の木が **Cursor IDE** と **Cursor CLI**（`agent`）の両方に効きます。読む `.cursor/` の発見は同じです。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。ソース／開発用の木は `core/` + `harness/cursor/` から `bun scripts/package.ts cursor` で、無視されるローカル `dist/cursor/` へ **生成** されます。手で編集しないでください。
 
 ## 配置
 
@@ -10,26 +10,35 @@ Cursor はいまのところいちばん「ネイティブ」な移植です。�
 - **`aidlc/`** — ワークスペースシェル（エンジンが読む、あらかじめ組んである `aidlc/spaces/default/memory/` の方法論ツリー）。`.cursor/` の兄弟です。
 - **`AGENTS.md`** — プロジェクトルートの常設指示。Cursor が自動で読みます。
 
-<a id="prerequisites"></a>
-
 ## 前提条件
 
 - **Cursor** — IDE、または Cursor CLI（入れ方は `curl https://cursor.com/install -fsS | bash`。起動は `agent`）。どちらもこの導入の `.cursor/` 面を読みます。確認済みは cursor-agent 2026.07。フック（`.cursor/hooks.json`）とスキル（`.cursor/skills/`）は現行ラインの機能です。
-- **bun** — どのハーネスでも同じです。ツールとフックはすべて bun で走ります。Cursor が起動するシェルが見える PATH に `bun` が必要です。
+- **bun** は、ソース開発、または任意の手動コピー用 `install.ts` ヘルパーのときだけです。入れたあと、ネイティブと版付きリリースランタイムは `aidlc` を起動します。
 - **名前付きモデルには有料の Cursor プラン** — Free アカウントが使えるのは `Auto` だけです。ティア付きペルソナの面は **モデルピン無し** で出荷します（Cursor では全ティアが null へ投影します。モデルの可用性はプラン次第です）。どのエージェントもセッションモデルを継ぎます。ヘッドレス CLI で `--model` を渡す実行は、それを許すプランが要ります。Bedrock BYOK は IDE だけです。Pro は静的キー、Teams は IAM ロール（Cursor のモデル設定に対する文書確認であり、ここでは実機確認していません）。CLI はモデルを Cursor 自身のバックエンド経由で回します。
 
 ## インストール
 
-1. 配布をプロジェクトへ入れます:
+### ネイティブチャネル（推奨）
 
-   ```bash
-   bun dist/cursor/install.ts your-project
-   ```
+[Install and Lifecycle](../18-install-and-lifecycle.md) のとおりネイティブコマンドを入れたあと:
 
-   インストーラはコピー全体を事前点検し、プロジェクト所有の衝突は拒否し、`.cursor/.gitignore` と既存の方法論メモリは残し、`.cursor/hooks.json` と `.cursor/cli.json` は構造マージし、既存の `AGENTS.md` と `.gitignore` には印付きの AI-DLC 節を足して置き換えません。フレームワーク所有は `.cursor/aidlc-install.json` に記録します。再実行は管理ファイルを上げつつ、`aidlc/active-space` と明示のプラグイン選択／合成状態を残し、そのスペースを変更可能なルールとペルソナポインタすべてへ再適用します。削除から戻したファイルも含みます。プラグイン合成のステージファイルが残るのは、寄与サイドカーか seam sentinel がそのステージを識別するときだけです。インストーラは残した管理パスをすべて出します。無関係なコアステージは、通常の receipt-hash 衝突／アップグレード処理へ進みます。
-   `aidlc/` シェルは、エンジンが読むあらかじめ組んである `aidlc/spaces/default/memory/` の方法論ツリーを出荷します。無いと `/aidlc --doctor` の "workspace shell ready" 検査が落ちます。
+```bash
+cd your-project
+aidlc config --harness cursor
+aidlc doctor
+```
 
-2. プロジェクトを Cursor IDE で開く（またはその中で `agent` を始める）と、`/aidlc --doctor` を走らせ、続けて `/aidlc` と作りたいものを。ネイティブのユーティリティショートカットは `/aidlc-status`、`/aidlc-jump --stage <slug>`（または `--phase <name>`）、`/aidlc-scope <name>` です。
+### 版付きの手動コピー（代替）
+
+特定リリースの `aidlc-runtime-X.Y.Z.tar.gz` を、[Install and Lifecycle: コピー経路](../18-install-and-lifecycle.md#コピー経路) のとおりダウンロードして展開し、その版付き投影を入れます:
+
+```bash
+bun "$RUNTIME_ROOT/cursor/install.ts" your-project
+```
+
+インストーラはコピー全体を事前点検し、プロジェクト所有の衝突は拒否し、`.cursor/.gitignore` と既存の方法論メモリは残し、`.cursor/hooks.json` と `.cursor/cli.json` は構造マージし、既存の `AGENTS.md` と `.gitignore` には印付きの AI-DLC 節を足して置き換えません。フレームワーク所有は `.cursor/aidlc-install.json` に記録します。再実行は管理ファイルを上げつつ、`aidlc/active-space` と明示のプラグイン選択／合成状態を残し、そのスペースを変更可能なルールとペルソナポインタすべてへ再適用します。削除から戻したファイルも含みます。プラグイン合成のステージファイルが残るのは、寄与サイドカーか seam sentinel がそのステージを識別するときだけです。インストーラは残した管理パスをすべて出します。無関係なコアステージは、通常の receipt-hash 衝突／アップグレード処理へ進みます。`aidlc/` シェルは、エンジンが読むあらかじめ組んである `aidlc/spaces/default/memory/` の方法論ツリーを出荷します。無いと `/aidlc --doctor` の "workspace shell ready" 検査が落ちます。
+
+プロジェクトを Cursor IDE で開く（またはその中で `agent` を始める）と、`/aidlc --doctor` を走らせ、続けて `/aidlc` と作りたいものを。ネイティブのユーティリティショートカットは `/aidlc-status`、`/aidlc-jump --stage <slug>`（または `--phase <name>`）、`/aidlc-scope <name>` です。
 
 ## このハーネスで違うところ
 
@@ -48,6 +57,7 @@ Cursor はいまのところいちばん「ネイティブ」な移植です。�
 - **権限**: `.cursor/cli.json` が事前承認するのは `Shell(bun)` だけです（プロジェクト単位の `cli.json` が運ぶのは権限だけ）。ほかのシェルコマンドは Cursor の承認設定に従います。
 - **MCP サーバー**: 同梱はありません。必要なら `.cursor/mcp.json` の下に自分で設定してください。
 - **ヘッドレスの `agent -p` 実行は承認ゲートを越えられません。** 人の存在 mint は `beforeSubmitPrompt` に乗ります。Cursor がこれを発火するのは対話の送信だけです（cursor-agent 2026.07 で確認済み）。なので print モードの実行は `HUMAN_TURN` を残さず、ゲート付きステージはその承認を設計どおり拒否します。無人のモデルが自分の仕事を承認しないためです。ヘッドレスは読み取り専用ユーティリティ（`--status`、`--doctor`、`--version`）と、自律 Construction（ゲートに人がいないので免除）に使ってください。ゲート付きワークフローは対話の Cursor セッションで走らせます。これはフレームワークの存在ゲートの性質であり、Cursor の制限ではありません。どのハーネスも人のプロンプトイベントから存在を発行します。
+- **セッション内の設定は対話です。** Cursor のチャットで `/aidlc --config [section]` を使い、コンダクターが選択を集めてから、正確で決定論的な config フラグを着地させます。
 
 ## 導入の確認
 

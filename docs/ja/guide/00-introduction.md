@@ -56,7 +56,7 @@ AI-DLC を**使って**ソフトウェアを作る人向けです。
 | スコープ | 11（enterprise から express、workshop を含む）+ 自動判定 |
 | 深度 | 3（Minimal / Standard / Comprehensive） |
 | テスト戦略 | 3（Minimal / Standard / Comprehensive） |
-| 監査イベントの種類 | 91 |
+| 監査イベントの種類 | 98 |
 
 ## 章立て
 
@@ -83,6 +83,7 @@ AI-DLC を**使って**ソフトウェアを作る人向けです。
 | [トラブルシュート](15-troubleshooting.md) | 症状からの切り分け |
 | [実例](16-worked-examples.md) | バグ修正と機能追加の通し |
 | [スキルとランナー](17-skills.md) | `/aidlc-*` と自作ランナー |
+| [Install and Lifecycle](18-install-and-lifecycle.md) | ネイティブ導入、初期化、更新、ロールバック、ピン、オフライン、アンインストール |
 | [複数チームの Construction とワークショップ](workshop-mode.md) | 取得、実装、固定マージバック、リリース、ワークショップ |
 | [他ハーネスで動かす](harnesses/README.md) | 各ハーネスの導入と差分 |
 | [用語集](glossary.md) | 用語の定義 |

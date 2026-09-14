@@ -84,7 +84,7 @@ Reverse Engineering は、brownfield プロジェクト向けに既存コード�
 
 ### Steps
 
-1. **Check Conditions** -- `<record>/aidlc-state.md` を読み、プロジェクト種別が brownfield か確認します。brownfield でなければ、このステージを `aidlc-orchestrate.ts report --stage reverse-engineering --result skipped --reason "greenfield workspace has no existing codebase to reverse engineer"` で飛ばします。エンジンは `[S]` を記録し、原子的に先へ回します。
+1. **Check Conditions** -- `<record>/aidlc-state.md` を読み、プロジェクト種別が brownfield か確認します。brownfield でなければ、このステージを `aidlc engine orchestrate report --stage reverse-engineering --result skipped --reason "greenfield workspace has no existing codebase to reverse engineer"` で飛ばします。エンジンは `[S]` を記録し、原子的に先へ回します。
 
 2. **Developer Code Scan** -- Task ツールで aidlc-developer-agent サブエージェント（`subagent_type="aidlc-developer-agent"`）へ委譲します。委譲プロンプトには `agents/aidlc-developer-agent.md` のペルソナと `.claude/knowledge/aidlc-developer-agent/` のナレッジを含めます。文脈として `aidlc-state.md` のワークスペース状態も入れます。
 
@@ -99,17 +99,17 @@ Reverse Engineering は、brownfield プロジェクト向けに既存コード�
 
    developer は、`{{HARNESS_DIR}}/knowledge/aidlc-developer-agent/re-artifacts.md` の Developer Code Scan Template に従った構造化スキャン結果を返します。
 
-3. **Architect Synthesis** -- Task ツールで aidlc-architect-agent サブエージェント（`subagent_type="aidlc-architect-agent"`）へ委譲します。委譲プロンプトには `agents/aidlc-architect-agent.md` のペルソナと `.claude/knowledge/aidlc-architect-agent/` のナレッジを含めます。developer のスキャン結果一式を文脈として渡し、`aidlc-state.md` のワークスペース状態も入れます。リポジトリの出力ディレクトリは `bun {{HARNESS_DIR}}/tools/aidlc-utility.ts codekb-path --repo <repo>` で解決します。スキャンの直前に `codekb-snapshot` でソース／ストア世代を取ります。既存ストアとそのスナップショットを architect へ渡します。
+3. **Architect Synthesis** -- Task ツールで aidlc-architect-agent サブエージェント（`subagent_type="aidlc-architect-agent"`）へ委譲します。委譲プロンプトには `agents/aidlc-architect-agent.md` のペルソナと `.claude/knowledge/aidlc-architect-agent/` のナレッジを含めます。developer のスキャン結果一式を文脈として渡し、`aidlc-state.md` のワークスペース状態も入れます。リポジトリの出力ディレクトリは `aidlc engine workspace codekb --repo <repo>` で解決します。スキャンの直前に `codekb-snapshot` でソース／ストア世代を取ります。既存ストアとそのスナップショットを architect へ渡します。
 
    architect はスキャン結果を、一時の完全候補ディレクトリへ 9 つの出力成果物（下の Outputs）として合成します。エンジンはその候補を `codekb-publish` で公開します。ソース変更や並行する共有ストア世代があれば拒否し、再試行の前に新しいスキャンまたは再マージを求めます。
 
 4. **Prepare Completion** -- 成果物 9 つがすべて存在することを確認します。`aidlc-state.md` は編集しません。ライフサイクル完了はゲート後の report のものです。
 
-5. **Present Completion & Request Approval** -- `aidlc-orchestrate.ts report --stage reverse-engineering --result awaiting-approval` でゲートを開き、成果物 9 つを見せ、人の approved / rejected の結果を同じエンジンコマンドで報告します。
+5. **Present Completion & Request Approval** -- `aidlc engine orchestrate report --stage reverse-engineering --result awaiting-approval` でゲートを開き、成果物 9 つを見せ、人の approved / rejected の結果を同じエンジンコマンドで報告します。
 
 ### Outputs
 
-各リポジトリの成果物 9 つは `aidlc/spaces/<active-space>/codekb/<repo>/` へ書きます。ディレクトリは `aidlc-utility.ts codekb-path --repo <repo>` が印字するそのままです:
+各リポジトリの成果物 9 つは `aidlc/spaces/<active-space>/codekb/<repo>/` へ書きます。ディレクトリは `aidlc engine workspace codekb --repo <repo>` が印字するそのままです:
 
 | #  | File                             | Contents                                                    |
 |----|----------------------------------|-------------------------------------------------------------|
@@ -185,9 +185,9 @@ Practices Discovery は、AI-DLC で二軸設定モデルの両行へ書く唯�
 3. **Three Mutually Blind Spokes** -- 1 つの並行バッチで `aidlc-quality-agent`、`aidlc-developer-agent`、`aidlc-devsecops-agent` をリード下書きに対して派遣します。ブリーフには下書きのパスは入りますが、ほかのスポークの出力は入りません。各々が `contributions/` 下へ身元付き寄与ファイルを書き、リードの成果物は編集しません。
 4. **Human Interview** -- スポーク 3 つが戻ったあと、構造化した質問を出します。brownfield は証拠の穴と方針判断を聞き、greenfield は 5 つのプラクティス領域すべてを、org 既定を提案として聞きます。再実行は以前確認した文を事前入力します。質問と正確な答えをすべて残します。
 5. **Lead Integration** -- 下書き、寄与パス 3 つ、インタビューの答えを持たせて pipeline-deploy リードを再派遣します。リードだけが最終成果物を統合し、`PRACTICES_DISCOVERED` を出します。混在する拍子は `Methodology: custom` を使い、Code Generation が答えを TDD へ押し込めず、明示の順序を保つようにします。
-6. **Open the Affirmation Gate** -- 聞く前に `aidlc-orchestrate.ts report --stage practices-discovery --result awaiting-approval` を呼びます。下書きをちょうど 2 択で出します: **Approve** / **Request Changes**。Request Changes は `--result rejected` で報告し、昇格は起きません。
+6. **Open the Affirmation Gate** -- 聞く前に `aidlc engine orchestrate report --stage practices-discovery --result awaiting-approval` を呼びます。下書きをちょうど 2 択で出します: **Approve** / **Request Changes**。Request Changes は `--result rejected` で報告し、昇格は起きません。
 7. **Promote After Human Approval** -- 人が Approve を選んだあとだけ、決定論的な昇格をアクティブスペースの `team.md` と `project.md` へ走らせます。先に `project.md`、続けて `team.md` を書き、`PRACTICES_AFFIRMED` を出します。昇格が失敗したら `PRACTICES_OVERRIDE` を出し、ステージを `[?]` のままゲートを開け、承認は報告しません。
-8. **Verify Receipt, Then Report** -- 昇格が成功すると、原子的に `Practices Affirmed Timestamp` と一致する `PRACTICES_AFFIRMED` 監査レシートを記録します。そのあと `aidlc-orchestrate.ts report --stage practices-discovery --result approved --user-input "Approve"` を呼びます。エンジンは寄与ファイル 3 つと、いまの試行のレシートを検証してから完了し、回します。
+8. **Verify Receipt, Then Report** -- 昇格が成功すると、原子的に `Practices Affirmed Timestamp` と一致する `PRACTICES_AFFIRMED` 監査レシートを記録します。そのあと `aidlc engine orchestrate report --stage practices-discovery --result approved --user-input "Approve"` を呼びます。エンジンは寄与ファイル 3 つと、いまの試行のレシートを検証してから完了し、回します。
 
 ### Approval Gate
 
@@ -279,7 +279,7 @@ Requirements Analysis は、利用者のインテントと、あればリバー�
 
 11. **Present Completion & Request Approval** -- :mag: 絵文字とレビューパス付きで完了メッセージを出します。承認ゲートは 2 変種です:
 
-    **実行状態で User Stories が SKIP のとき:** 3 択ゲート: Approve / Request Changes / Add User Stories（いま飛ばしている User Stories ステージを入れる）。"Add User Stories" を選んだら `bun {{HARNESS_DIR}}/tools/aidlc-utility.ts recompose --add user-stories` を走らせます。チェックボックスは直接編集しません。
+    **実行状態で User Stories が SKIP のとき:** 3 択ゲート: Approve / Request Changes / Add User Stories（いま飛ばしている User Stories ステージを入れる）。"Add User Stories" を選んだら `aidlc engine recompose --add user-stories` を走らせます。チェックボックスは直接編集しません。
 
     **User Stories が SKIP でないとき:** 標準の 2 択ゲート: Approve / Request Changes。
 
@@ -344,7 +344,7 @@ User Stories は、正式な要件を、各機能の「誰が、何を、なぜ�
 
    `<record>/inception/user-stories/user-stories-assessment.md` を作り、次を残します: 判断（Execute または Skip）、根拠、考慮した要因、走るなら主な価値領域、飛ばすなら代替のカバレッジ。
 
-   飛ばすなら `aidlc-orchestrate.ts report --stage user-stories --result skipped --reason "<reason from the assessment>"` を呼びます。エンジンは成果物やアンサンブル証拠の検査の前に `[S]` を記録し、回します。
+   飛ばすなら `aidlc engine orchestrate report --stage user-stories --result skipped --reason "<reason from the assessment>"` を呼びます。エンジンは成果物やアンサンブル証拠の検査の前に `[S]` を記録し、回します。
 
 3. **Load Prior Context** -- `<record>/inception/requirements-analysis/requirements.md` を読みます。brownfield なら、関連する RE 成果物を `aidlc/spaces/<active-space>/codekb/<repo>/` から読みます。
 
@@ -536,7 +536,7 @@ aidlc-aws-platform-agent はマネージドサービス依存の補助視点を�
 
 5. **Prepare Completion** -- 設計成果物を検証します。状態は編集しません。ゲート結果は `aidlc-orchestrate.ts` で報告します。
 
-6. **Present Completion & Request Approval** -- :building_construction: 絵文字、設計成果物の要約、主要なアーキテクチャ判断の強調、レビューパス付きで完了メッセージを出します。3 択承認ゲート: Approve / Request Changes / Add Units Generation（実行計画で飛ばしていれば）。Add Units Generation を選ぶと `bun {{HARNESS_DIR}}/tools/aidlc-utility.ts recompose --add units-generation` を走らせます。状態のチェックボックスは直接編集しません。
+6. **Present Completion & Request Approval** -- :building_construction: 絵文字、設計成果物の要約、主要なアーキテクチャ判断の強調、レビューパス付きで完了メッセージを出します。3 択承認ゲート: Approve / Request Changes / Add Units Generation（実行計画で飛ばしていれば）。Add Units Generation を選ぶと `aidlc engine recompose --add units-generation` を走らせます。状態のチェックボックスは直接編集しません。
 
 ### Outputs
 
@@ -560,7 +560,7 @@ aidlc-aws-platform-agent はマネージドサービス依存の補助視点を�
 
 - **Approve** -- 次のステージへ進む
 - **Request Changes** -- 改訂フィードバックを出す
-- **Add Units Generation** -- いま飛ばしている Units Generation ステージを入れる（実行計画で飛ばしていれば）`aidlc-utility.ts recompose --add units-generation` 経由
+- **Add Units Generation** -- いま飛ばしている Units Generation ステージを入れる（実行計画で飛ばしていれば）`aidlc engine recompose --add units-generation` 経由
 
 ### Notes
 
@@ -836,7 +836,7 @@ Inception フェーズは、Construction と Operation へ持ち越す次の主�
 
 ### Cross-References
 
-- **Orchestrator**: `dist/claude/.claude/skills/aidlc/SKILL.md` -- 振り分けロジック、スコープからステージへの対応、ステージグラフ、Construction フローの定義
+- **Orchestrator**: `harness/claude/skills/aidlc/SKILL.md` -- 振り分けロジック、スコープからステージへの対応、ステージグラフ、Construction フローの定義
 - **Stage Protocol**: `dist/claude/.claude/aidlc-common/protocols/stage-protocol.md` -- 承認ゲート、質問形式、完了メッセージ、§13 Learnings Ritual。フェーズ境検証は `stage-protocol-governance.md` §13
 - **Ideation Phase**: `docs/reference/04-stages/ideation.md` -- 前フェーズの文書
 - **Construction Phase**: `docs/reference/04-stages/construction.md` — 既定ウォークは stage-major。`bolt-plan.md` は計画であり、ウォークの正本ではない

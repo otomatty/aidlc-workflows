@@ -119,20 +119,20 @@ ls .claude/skills/
 ステージランナーを足すには、ステージを足します。ステージファイルを書き、グラフを再コンパイルし、再生成します。
 
 ```bash
-bun .claude/tools/aidlc-runner-gen.ts write
+aidlc engine gen runners
 ```
 
 ジェネレータはコンパイル済みステージ一覧（正本）を読み、走らせられるステージごとにランナーシェルを出します。新しいステージの `/aidlc-<your-stage>` は自動で現れます。ランナーファイルを手で書く必要も、ボイラープレートをコピーする必要もありません。スコープランナーも同じで、frontmatter が `runner: true` のスコープが対象です。`scopes --all` はスコープファイル全部のランナーを出します。
 
 ```bash
-bun .claude/tools/aidlc-runner-gen.ts scopes      # generate scope-runners
+aidlc engine gen runner-scopes      # generate scope-runners
 ```
 
 ランナー一式は手保守ではなく導出なので、覆うステージとスコープからずれません。ディスク上の集合が正本から外れた瞬間に、CI が 2 つの検査で失敗します。
 
 ```bash
-bun .claude/tools/aidlc-runner-gen.ts check            # stage-runner drift
-bun .claude/tools/aidlc-runner-gen.ts scopes --check   # scope-runner drift
+aidlc engine gen runners --check             # stage-runner drift
+aidlc engine gen runner-scopes --check       # scope-runner drift
 ```
 
 グラフにステージを足してランナーを再生成していない、または消えたステージの孤児ランナーが残っていると、差分付きで大きく失敗します。作者の仕事はステージファイルを足して再生成することだけです。ランナーは結果として付き、ジェネレータが維持します。
@@ -158,8 +158,8 @@ bun .claude/tools/aidlc-runner-gen.ts scopes --check   # scope-runner drift
 /aidlc-init [--scope <name>]        == /aidlc on a fresh workspace
 
 # Add your own: write a stage/scope file, then
-bun .claude/tools/aidlc-runner-gen.ts write
-bun .claude/tools/aidlc-runner-gen.ts scopes
+aidlc engine gen runners
+aidlc engine gen runner-scopes
 ```
 
 あわせて: [CLI コマンド](12-cli-commands.md) · [スコープ・深度・テスト戦略](05-scopes-and-depth.md) · [カスタマイズ](13-customization.md)

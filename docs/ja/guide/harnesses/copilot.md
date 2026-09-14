@@ -1,38 +1,47 @@
 # GitHub Copilot で AI-DLC を動かす（CLI + VS Code）
 
-`dist/copilot/` は、フレームワークのハーネス配布の一つで、対象は **GitHub Copilot** です。1 回の導入で Copilot の面が両方使えます。単体の Copilot CLI（`copilot`）と、VS Code の agent mode です。GitHub は両者のプロジェクト発見パスを揃えました（`.github/skills/`、`.github/agents/`、`.github/hooks/`、ルートの `AGENTS.md`）。なのでフレームワークも、両方が読む木を 1 本だけ出荷します。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。この木は `core/` + `harness/copilot/` から `bun scripts/package.ts copilot` で **生成** されます。手で編集しないでください（ドリフト検査が CI で落ちます）。
+Copilot ランタイムは、フレームワークのハーネス配布の一つで、対象は **GitHub Copilot** です。1 回の導入で Copilot の面が両方使えます。単体の Copilot CLI（`copilot`）と、VS Code の agent mode です。GitHub は両者のプロジェクト発見パスを揃えました（`.github/skills/`、`.github/agents/`、`.github/hooks/`、ルートの `AGENTS.md`）。なのでフレームワークも、両方が読む木を 1 本だけ出荷します。決定論的なコアは一つ、ハーネスは複数。エンジン、状態機械、監査ログ、グラフ、スウォームの審判、ラーニングゲートは、どの配布でもバイト一致です。違うのはシェルだけです。ソース／開発用の木は `core/` + `harness/copilot/` から `bun scripts/package.ts copilot` で、無視されるローカル `dist/copilot/` へ **生成** されます。手で編集しないでください。
 
 ## 配置: エンジンディレクトリと .github シェル
 
 - **`.aidlc/`** — AIDLC のエンジントリー（ツール、フック + Copilot アダプタ、エージェント、ナレッジ、スコープ、センサー、aidlc-common）。Copilot のどちらの面もここは走査しません。人が見るものはすべて `.github/` に乗ります。
 - **`.github/`** — ネイティブに消費される、`aidlc` 名の出力だけ。フック配線（`hooks/aidlc.json`）、ペルソナのカスタムエージェント 14 体（`agents/aidlc-*-agent.md`）、スキルツリー一式（`skills/aidlc*/` — オーケストレータ、ステージごとのランナー、スコープランナー、セッションスキル）。リポジトリ自身の `.github/`（workflows、templates）は触りません。導入はこれらのファイルを **マージ** します。接頭辞で衝突しません。
 
-<a id="prerequisites"></a>
-
 ## 前提条件
 
 - **Copilot CLI ≥ 1.0.74 かつ／または VS Code ≥ 1.130** — 確認済みの下限です。PascalCase のフック登録（両面が同じ snake_case ペイロードを渡す）、ブロックする PreToolUse の deny 経路、ブロックする Stop フック、`.github` のスキル／エージェント発見。確認は `copilot --version` / `code --version`。（VS Code の agent hooks は Preview 機能です。doctor が下限を固定します。）
-- **bun** — どのハーネスでも同じです。ツールとフックはすべて bun で走ります。Copilot が起動するシェルの PATH に bun が必要です。
+- **bun** は、ソース／開発用の `dist/` 投影を生成または走らせるときだけです。ネイティブ導入と版付きリリースランタイムは `aidlc` を使います。
 - **フォルダ信頼** — リポジトリフックが走るのは、プロジェクトの絶対パスが `~/.copilot/config.json` の `trustedFolders` にあるときだけです（CLI は初回の対話で聞きます）。ヘッドレスの `copilot -p` では、さらに `GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS=1` が必要です。**未信頼だと、どのフックも警告なしで静かに no-op します** — 両方を見る面は `/aidlc --doctor` です。
 - **モデルプロバイダ** — この導入はモデルをピンしません。サインイン済みの Copilot はそのまま動きます。BYOK は GitHub 認証なしでも動きます（例: Amazon Bedrock の Anthropic 互換エンドポイント: `COPILOT_PROVIDER_BASE_URL=https://bedrock-runtime.<region>.amazonaws.com/anthropic`、`COPILOT_PROVIDER_TYPE=anthropic`、bearer トークン、そして `COPILOT_MODEL=<catalog name>` + `COPILOT_PROVIDER_WIRE_MODEL=<Bedrock model id>` — `copilot help providers` が集合を書いています）。VS Code ではモデルピッカーか Custom Endpoint プロバイダを使います。
 
 ## インストール
 
-下のコピーは、[aidlc-workflows](https://github.com/awslabs/aidlc-workflows) リポジトリを `main` ブランチで clone した場所から実行します:
+### ネイティブチャネル（推奨）
 
 ```bash
-git clone --branch main https://github.com/awslabs/aidlc-workflows.git
-cd aidlc-workflows
+tmp="$(mktemp -d)"
+curl -fsSL \
+  https://github.com/awslabs/aidlc-workflows/releases/latest/download/install.sh \
+  -o "$tmp/install.sh"
+sh "$tmp/install.sh"
+rm -rf "$tmp"
+cd your-project
+aidlc config --harness copilot
+aidlc doctor
 ```
+
+### 版付きの手動コピー（代替）
+
+特定リリースの `aidlc-runtime-X.Y.Z.tar.gz` を、[Install and Lifecycle: コピー経路](../18-install-and-lifecycle.md#コピー経路) のとおりダウンロードして展開し、`RUNTIME_ROOT` を展開した `runtime/` ディレクトリにします。
 
 1. 配布をプロジェクトへコピーします:
 
    ```bash
    mkdir -p your-project/.aidlc your-project/aidlc your-project/.github
-   cp -R dist/copilot/.aidlc/.  your-project/.aidlc/
-   cp -R dist/copilot/aidlc/.   your-project/aidlc/    # the workspace shell — a sibling of .aidlc/, not inside it
-   cp -R dist/copilot/.github/. your-project/.github/  # MERGE — everything is aidlc-prefixed, nothing of yours is overwritten
-   cp dist/copilot/AGENTS.md    your-project/AGENTS.md # or merge into yours — keep the @-import block (the method include)
+   cp -R "$RUNTIME_ROOT/copilot/.aidlc/."  your-project/.aidlc/
+   cp -R "$RUNTIME_ROOT/copilot/aidlc/."   your-project/aidlc/    # the workspace shell — a sibling of .aidlc/, not inside it
+   cp -R "$RUNTIME_ROOT/copilot/.github/." your-project/.github/  # MERGE — everything is aidlc-prefixed, nothing of yours is overwritten
+   cp "$RUNTIME_ROOT/copilot/AGENTS.md"    your-project/AGENTS.md # or merge into yours — keep the @-import block (the method include)
    ```
 
 2. ワークフローを始める前に、出荷の `AGENTS.md` の 「Git Integration」節から `.gitignore` エントリを入れてください（クローンごとの監査シャードは意図してコミットします。カーソルとマシンローカルのランタイムは無視したままです）。
@@ -40,6 +49,8 @@ cd aidlc-workflows
 3. フォルダを信頼します。プロジェクトで `copilot` を一度対話起動し、信頼プロンプトを受け入れる（または `~/.copilot/config.json` の `trustedFolders` にプロジェクトの絶対パスを足す）。
 
 4. `/aidlc --doctor` を走らせ、続けて `/aidlc` と作りたいものを。どちらの面でも同じです。
+
+Bun 形の投影が要るフレームワーク開発者は、リポジトリを clone し、`bun install --frozen-lockfile` と `bun scripts/package.ts` を走らせ、無視されるローカル `dist/copilot/` 出力を使えます。
 
 ## このハーネスで違うところ
 

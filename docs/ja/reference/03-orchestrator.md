@@ -119,13 +119,13 @@ compose 面（先頭の `compose` 動詞、`--new-scope`、または `--report <
 
 ### インテント作成 -- Initialization フェーズ
 
-別のスキャフォルドコマンドはありません（かつての `init` フラグは廃止。ワークスペースシェルは `dist/<harness>/` に組み込み済みです）。Initialization 3 ステージ（workspace-scaffold、workspace-detection、state-init）は `aidlc-utility intent-create` の中で決定論的に走ります — 最初の `/aidlc`（または `/aidlc <description>`）で自動起動、または明示の `/aidlc-init` 梱包。作成はインテントのレコードディレクトリを `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` に切り、状態を初期化し、スコープルーティングを適用し、ワークフローを Initialization のあとの最初のステージへ置きます:
+別のスキャフォルドコマンドはありません（かつての `init` フラグは廃止。ワークスペースシェルは、入れたまたは版付きの `runtime/<harness>/` 投影に組み込み済みです）。Initialization 3 ステージ（workspace-scaffold、workspace-detection、state-init）は `aidlc-utility intent-create` の中で決定論的に走ります — 最初の `/aidlc`（または `/aidlc <description>`）で自動起動、または明示の `/aidlc-init` 梱包。作成はインテントのレコードディレクトリを `aidlc/spaces/<space>/intents/<YYMMDD>-<label>/` に切り、状態を初期化し、スコープルーティングを適用し、ワークフローを Initialization のあとの最初のステージへ置きます:
 
 1. レコードディレクトリ木を作る（冪等 — 既存のディレクトリ / ファイルは飛ばす）: `audit/` シャードディレクトリ、スコープが走るフェーズごとに空の成果物ディレクトリ（アクティブスコープの下に EXECUTE ステージが無いフェーズは作らない。ステップ 4 の `PHASE_SKIPPED` イベントと揃える）、検証ディレクトリ。ステージごとのディレクトリは事前に作らない。ステージが初めて成果物を書いたときに現れます。
 2. 空のスペース単位 `aidlc/knowledge/` ディレクトリを作る（そのスペースの `intents/` の兄弟）。自由形式で固定ファイル集合は無い — 作成はエージェントごとのサブディレクトリも README も種まきせず、チームが自分で足します。
 3. ワークスペースをスキャンし、インテントの `aidlc-state.md` を書く。実際のフェーズ（例: `--scope feature` なら `IDEATION`）、解決したスコープ、コンパイル済みスコープグリッド（`scope-grid.json`。各ステージの `scopes:` frontmatter の転置）から導いたステージ計画。正確な初期説明は、コミットされる `project-description.json` に JSON 文字列一つとして残し、状態はその出典を名指し、安全な一行 `Project` プレビューを保ちます。
 4. イベント列を全部出す: `WORKFLOW_STARTED`、`WORKSPACE_SCAFFOLDED`、`WORKSPACE_SCANNED`、`WORKSPACE_INITIALISED`、最初に実行するフェーズの `PHASE_STARTED`、各 Initialization ステージの `STAGE_STARTED` + `STAGE_COMPLETED`、スコープが飛ばすフェーズの `PHASE_SKIPPED`。
-5. 自動作成は、インテントがゼロのワークスペースだけで行う。すでにインテントがありアクティブカーソルが無いときは、エンジンは重複を作らず、どれかを選ぶよう促します（`/aidlc intent <slug>`）。再 init フラグはありません。
+5. 自動作成は、インテントがゼロのワークスペースだけで行う。すでにインテントがありアクティブカーソルが無いときは、エンジンは重複を作らず、どれかを選ぶよう促します（`/aidlc intent <slug>`）。ワークフロー再誕生フラグはありません。プロジェクト単位の `aidlc config` とは無関係です。
 6. 自動作成 print 経由で作成に至ったときは、コンダクターが `next` を再走し、Initialization のあとの最初のステージへ続けます。明示の `/aidlc-init` 梱包は Initialization で止まり、対話で始めるには利用者がもう一度 `/aidlc` を打ちます。
 
 ### 再開（状態ファイルがある）
@@ -289,7 +289,7 @@ Stage Progress の行はステージにつき 1 行のままで、それらの�
 
 ### 完全な対応
 
-正本は `.claude/scopes/aidlc-<name>.md` と、各ステージの `scopes:` frontmatter で、`.claude/tools/data/scope-grid.json` にコンパイルされます。いまのコンパイル済み件数は `bun .claude/tools/aidlc-utility.ts scope-table` です。
+正本は `.claude/scopes/aidlc-<name>.md` と、各ステージの `scopes:` frontmatter で、`.claude/tools/data/scope-grid.json` にコンパイルされます。いまのコンパイル済み件数は `aidlc engine gen scope-table` です。
 
 | Scope | Stages Included | EXECUTE / Total | Depth | Test Strategy |
 |---|---|---|---|---|
@@ -466,7 +466,11 @@ Construction（ステージ 3.1–3.7）は、標準のステージごとのエ�
 2. そのステージの最後の Unit が落ち着いたあと、エンジンは同じステージを `gate: true` で出し直す — ステージ単位の承認 1 回。
 3. Code Generation の `code-generation.md` 内の Unit ごとの完了ゲートは**抑える**。Step 3 Plan Approval は硬い停止のまま。自律スウォームでは、Code Generation のステージゲートは **最後の** DAG バッチが収束したあとにだけ出す。
 
-**walking-skeleton ゲート**は、対象になる最初の Construction EXECUTE ステージ（`isSkeletonGateStage`）です。そのゲートが承認した直後、オーケストレータは**ラダープロンプト**をワークフローにつきちょうど一度出し、`aidlc-state.md` に `Construction Autonomy Mode: autonomous|gated` を残し、`AUTONOMY_MODE_SET` を出します。既定の歩きでは、`autonomous` は残りの Construction *ステージ* ゲートを飛ばします（halt-and-ask、Build-and-Test ループバックの 4 段目、スウォーム settle の `gate: true` 再入場は除く。自律の下ではコンダクターが自動承認する）。任意の `Construction Iteration: unit-major` はスウォームを抑え、ステージごとのゲート連鎖を**残します**。
+対象になる最初の Construction EXECUTE ステージは、`skeleton: off` のときも、以前に自律が付与されていても、いつも自分の人の承認が要ります。空でない Unit DAG 付きの skeleton-on では、これが **walking-skeleton ゲート**です。承認したあと、コンダクターは自律選択がまだ残っていなければ、インテントにつき**ラダープロンプト**を一度出します。skeleton-off に自動ラダープロンプトはありません。
+
+人は Construction 中いつでも、どちらのスケルトン姿勢でも、自律を付与または取り消せます: 「残りを自律で走る」または「ここからすべてのステージをゲートする」。コンダクターはオンデマンド依頼もラダーの答えも `aidlc engine bolt set-autonomy --mode autonomous|gated` 経由で残します。それが `Construction Autonomy Mode` を書き、`AUTONOMY_MODE_SET` を出します。エスカレーションは新しい人のターンが要り、`gated` への取り消しは要りません。既存の選択は再開で尊重され、ラダーで繰り返しません。起動例は [command reference](../guide/12-cli-commands.md#aidlc-engine-bolt-set-autonomy-change-construction-approvals) です。
+
+既定の stage-major 歩きでは、`autonomous` は残りの適格 Construction *ステージ* ゲートを飛ばします。最初のステージの承認と、各 Unit の Code Generation Plan Approval は人の所有のままです。halt-and-ask と Build-and-Test ループバックの 4 段目はまだ人で止まります。スウォーム settle の `gate: true` 再入場は自律の下でコンダクターが自動承認します。既存の任意 `Construction Iteration: unit-major` は直列のまま、スウォームを抑え、**ユニットごとステージの人のステージゲートを残します**。
 
 並行できる Unit（依存の前提を満たし、相互依存が無い）が**バッチ**になります。オーケストレータはステージ 3.5 Code Generation を、**1 つのアシスタントメッセージで N 回の `Task` 呼び出し**として派遣できます。`BOLT_STARTED` / `BOLT_COMPLETED` はスウォーム経路で Unit / worktree ごとに発火し、`SWARM_COMPLETED` がバッチを閉じます。既定の gated 実行ではそれらの `BOLT_*` 行は残りません。
 
@@ -554,14 +558,14 @@ stateDiagram-v2
 
 1. **完了検証を走らせる** - 成果物がディスクにあること、ガードレールを守っていることを見る。正しさの検査であり、状態遷移ではありません。決定論でも強制します: `approve` は、宣言した `produces` 成果物が欠けたゲート付きステージを拒否します（`AIDLC_SKIP_ARTIFACT_GUARD=1` でない限り）。出力無しで完了にはできません（#366）。Unit ごとの Construction ステージは、代わりにスウォームの審判が検証します。
 
-2. **ゲートに入る**: `bun .claude/tools/aidlc-orchestrate.ts report --stage <slug> --result awaiting-approval`。状態トランザクションが開く前に、エンジンはゲート結びのセンサーを、存在する宣言成果物ごとに一度走らせます。blocking の結びは検証済み合格が要ります。所見、実行不可、壊れた判定、タイムアウトは遷移を拒否します。対話で上書きするには、先に別の `Fix findings` / `Override blocking sensors` 判断を `aidlc-log.ts` で記録して見せ、正確な人の答えを待って記録し、それから `--override-blocking-sensors --user-input "Override blocking sensors"` で再試行します。自律実行は上書きできません。そうでなければエンジンは `[-]` → `[?]` にし、`STAGE_AWAITING_APPROVAL` を出し、`/aidlc --status` に "Awaiting your approval on \<stage\>" を出します。
+2. **ゲートに入る**: `aidlc engine orchestrate report --stage <slug> --result awaiting-approval`。状態トランザクションが開く前に、エンジンはゲート結びのセンサーを、存在する宣言成果物ごとに一度走らせます。blocking の結びは検証済み合格が要ります。所見、実行不可、壊れた判定、タイムアウトは遷移を拒否します。対話で上書きするには、先に別の `Fix findings` / `Override blocking sensors` 判断を `aidlc-log.ts` で記録して見せ、正確な人の答えを待って記録し、それから `--override-blocking-sensors --user-input "Override blocking sensors"` で再試行します。自律実行は上書きできません。そうでなければエンジンは `[-]` → `[?]` にし、`STAGE_AWAITING_APPROVAL` を出し、`/aidlc --status` に "Awaiting your approval on \<stage\>" を出します。
 
 3. **承認ゲートを出す**（AskUserQuestion）。
 
 4. **利用者の応答を記録する**:
-   - **Approve** -> `bun .claude/tools/aidlc-orchestrate.ts report --stage <slug> --result approved --user-input "<exact choice>"`。欠けたゲート行があれば出し、それから `GATE_APPROVED` + `STAGE_COMPLETED` を出して進む。ステージの `produces` 出力が無ければ、欠けた成果物エラーで拒否する。
-   - **Request Changes** → `bun .claude/tools/aidlc-orchestrate.ts report --stage <slug> --result rejected --user-input "Request Changes" --reason "<feedback>"`。エンジンは `GATE_REJECTED` + `STAGE_REVISING` を出し、`[?]` → `[R]` にし、Revision Count を増やす。
-   - `[R]` ステージの仕事を再走したあと、`bun .claude/tools/aidlc-orchestrate.ts report --stage <slug> --result revised` でゲートに入り直す（ゲートセンサーを再走し、新しい `STAGE_AWAITING_APPROVAL` を出し、`[R]` → `[?]`）。承認時の未記録改訂バックストップは、復旧した再入場の前に同じセンサー強制を使う。blocking の結果は残る状態を `[R]` のままにする。
+   - **Approve** -> `aidlc engine orchestrate report --stage <slug> --result approved --user-input "<exact choice>"`。欠けたゲート行があれば出し、それから `GATE_APPROVED` + `STAGE_COMPLETED` を出して進む。ステージの `produces` 出力が無ければ、欠けた成果物エラーで拒否する。
+   - **Request Changes** → `aidlc engine orchestrate report --stage <slug> --result rejected --user-input "Request Changes" --reason "<feedback>"`。エンジンは `GATE_REJECTED` + `STAGE_REVISING` を出し、`[?]` → `[R]` にし、Revision Count を増やす。
+   - `[R]` ステージの仕事を再走したあと、`aidlc engine orchestrate report --stage <slug> --result revised` でゲートに入り直す（ゲートセンサーを再走し、新しい `STAGE_AWAITING_APPROVAL` を出し、`[R]` → `[?]`）。承認時の未記録改訂バックストップは、復旧した再入場の前に同じセンサー強制を使う。blocking の結果は残る状態を `[R]` のままにする。
 
 5. **次のステージへ進む**: ステップ 4 の承認報告が進める。エンジンは状態ファイルの EXECUTE/SKIP 接尾辞（`init` が設定）とコンパイル済みスコープグリッド（`scope-grid.json`）から、次の対象内ステージを導く。完了を `[x]`、次を `[-]` にし、Current Stage / Lifecycle Phase / Active Agent / Next Stage / Last Completed Stage / Last Updated / Completed 件数を更新し、次のステージの `STAGE_STARTED` を出す。フェーズ境界ではさらに `PHASE_COMPLETED` + `PHASE_VERIFIED` + `PHASE_STARTED` を原子的に出す。
 

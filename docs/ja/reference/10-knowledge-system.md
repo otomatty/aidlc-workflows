@@ -4,7 +4,7 @@
 
 ---
 
-## Two-Tier Architecture {#two-tier-architecture}
+## Two-Tier Architecture
 
 AI-DLC は、フレームワークの方法論とチームの寄せを分ける二層のナレッジシステムです:
 
@@ -12,7 +12,7 @@ AI-DLC は、フレームワークの方法論とチームの寄せを分ける�
 
 **Tier 2: チームナレッジ**（アクティブスペース — `aidlc/knowledge/`。`aidlc/spaces/<space>/knowledge/` の略） — 利用者が管理。会社固有の標準、方針、約束。スペースの `memory/`、`codekb/`、`intents/` の兄弟なので、そのスペースの全インテントで積み上がる。自由形式。ブートストラップ時は空。エンジンは最初の `/aidlc` で空の `aidlc/knowledge/` ディレクトリを作り、中身は種をまきません。固定のファイル集合はありません。
 
-### Tier 1 Structure {#tier-1-structure}
+### Tier 1 Structure
 
 ```
 .claude/knowledge/
@@ -20,7 +20,7 @@ AI-DLC は、フレームワークの方法論とチームの寄せを分ける�
 |   +-- ai-dlc-principles.md       # Core methodology principles
 |   +-- verification.md            # Phase boundary verification rules
 |   +-- brownfield.md              # Brownfield safeguards
-|   +-- audit-format.md            # 91-event audit taxonomy
+|   +-- audit-format.md            # 98-event audit taxonomy
 |   +-- knowledge-readme-template.md  # Optional README template a team can copy into Tier 2
 |   +-- state-template.md          # State file contract
 +-- aidlc-product-agent/
@@ -48,9 +48,9 @@ AI-DLC は、フレームワークの方法論とチームの寄せを分ける�
 +-- [... 8 more agent knowledge dirs]
 ```
 
-### Tier 2 Structure {#tier-2-structure}
+### Tier 2 Structure
 
-ブートストラップ時は空です。エンジンは裸の `aidlc/knowledge/` ディレクトリだけを作り、中には何も置きません — README も、エージェントごとのサブディレクトリもありません。下の `aidlc-shared/` とエージェントごとのディレクトリは、エージェントのペルソナが見る約束です。チームは中身があるものだけ作ります。
+ブートストラップ時は空です。エンジンは裸の `aidlc/knowledge/` ディレクトリを作り、中身は何も作りません — README も、エージェントごとのサブディレクトリもありません。下の `aidlc-shared/` とエージェントごとのディレクトリは、エージェントペルソナが探す約束です。チームは中身があるものだけ作ります。
 
 ```
 aidlc/knowledge/                    # empty at bootstrap; team-created subdirs
@@ -61,7 +61,7 @@ aidlc/knowledge/                    # empty at bootstrap; team-created subdirs
 +-- [... a directory per agent the team chooses to populate]
 ```
 
-## DocumentKB Derived Catalog {#documentkb-derived-catalog}
+## DocumentKB Derived Catalog
 
 DocumentKB は、Tier 2 ナレッジルートの下にある、スペース単位の派生カタログです:
 
@@ -76,19 +76,19 @@ aidlc/spaces/<space>/knowledge/
         +-- summary.md    # present only once `knowledge summarize` has run
 ```
 
-`aidlc-knowledge.ts` はカタログ変更を `documentkb/.journal/<transaction-id>/` の下にステージし、ワークスペースの監査ロックを持ったままコミットします。`documents/` の原本は、フレームワークが動かしたり消したりしません。抽出した本文と要約はリビジョンに結び、信頼しないデータとして扱います。`summarize <id> --text-file <path> --source-revision <sha256>` は、道具自身は決して生成しない LLM 執筆の要約文を残します。`source_revision` が行のダイジェストと一致しなくなった要約は、抽出と同じく `invalidated` と報告され、出されません。`list` または `show` が出すタグは、顧客の中身から LLM が書いた可能性もあるので、インラインの信頼しないデータの注を付けます。
+`aidlc-knowledge.ts` はカタログ変更を `documentkb/.journal/<transaction-id>/` の下にステージし、ワークスペース監査ロックを持ったままコミットします。`documents/` の下の原本は、フレームワークが決して動かしたり消したりしません。抽出した中身 **と** 要約はリビジョン結びで、信頼できないデータとして扱います: `summarize <id> --text-file <path> --source-revision <sha256>` は、ツール自身が決して生成しない LLM 執筆の要約テキストを永続します。行のダイジェストともう一致しない `source_revision` を持つ要約は、抽出とまったく同じに `invalidated` と報告され、差し止められます。`list` または `show` が出すタグは、顧客コンテンツから LLM が書いた可能性もあるので、インラインの信頼できないデータの注記を運びます。
 
-文書ごとの `metadata.json` は、失われた `index.json` を立て直すのに要る行の同一性とソース事実を複製します。それが復旧の境界です。残った metadata レコードが ID と tombstone を戻します。`documentkb/` ツリー全体を消すと、立て直しの源が無くなり、復旧できません。
+各文書の `metadata.json` は、失った `index.json` を再建するのに要る行の身元とソース事実を複製します。それが復旧境界です。残ったメタデータレコードは ID と墓石を戻します。`documentkb/` 木全体を消すと再建源が無くなり、復旧できません。
 
-文書の出自は、それが説明するカタログ書き込みのあと、監査最後でスペース単位のシャード `aidlc/spaces/<space>/intents/audit/` へ出ます。DocumentKB の復旧と `--doctor --export` はそのシャードを明示的に読みます。通常のワークフロー権限の読み手は、アクティブインテントの監査シャードに範囲したままです。順序の例外と復旧の意味は [State Machine](12-state-machine.md#audit-last-for-derived-catalogs-document_indexed-document_updated-document_removed) です。
+文書の出自は、それが記述するカタログ書きのあと、監査最後にスペース単位シャード `aidlc/spaces/<space>/intents/audit/` へ出ます。DocumentKB 復旧と `--doctor --export` はそのシャードを明示して読みます。通常のワークフロー権威の読み手は、アクティブインテントの監査シャードにスコープされたままです。順序の例外と復旧意味は [State Machine](12-state-machine.md#audit-last-for-derived-catalogs-document_indexed-document_updated-document_removed) です。
 
-スキーマと検証の契約は `core/tools/aidlc-documentkb-schema.ts` が持ち、コマンドとトランザクション論理は `core/tools/aidlc-knowledge.ts` が持ちます。
+スキーマと検証契約は `core/tools/aidlc-documentkb-schema.ts` が持ち、コマンドとトランザクション論理は `core/tools/aidlc-knowledge.ts` が持ちます。
 
 ---
 
-## 6-Step Knowledge Loading Order {#6-step-knowledge-loading-order}
+## 6-Step Knowledge Loading Order
 
-各ステージは、厳密な 6 段でナレッジを読みます。先に解決済みルール集合、それから共有方法論、エージェント固有の方法論、チームの寄せ、最後に上流ステージの成果物です。
+各ステージはナレッジを厳密な 6 段で読みます。解決したルール集合が先、それから共有方法論、エージェント固有の方法論、チームの寄せ、最後に先行ステージの成果物です。
 
 ```mermaid
 sequenceDiagram
@@ -129,42 +129,42 @@ sequenceDiagram
 
 | Step | Source | Tier | Managed By | Loaded |
 |------|--------|------|-----------|--------|
-| 1 | `aidlc/spaces/<active-space>/memory/` | -- | フレームワーク + 自己学習 | 最初 |
-| 2 | `.claude/knowledge/aidlc-shared/` | 1 | フレームワーク | 早い |
-| 3 | `.claude/knowledge/[agent]/` | 1 | フレームワーク | 早い |
-| 4 | `aidlc/knowledge/aidlc-shared/` | 2 | チーム | 中盤 |
-| 5 | `aidlc/knowledge/[agent]/` | 2 | チーム | 中盤 |
-| 6 | 上流ステージの成果物 | -- | 動的 | 最後 |
+| 1 | `aidlc/spaces/<active-space>/memory/` | -- | Framework + self-learning | First |
+| 2 | `.claude/knowledge/aidlc-shared/` | 1 | Framework | Early |
+| 3 | `.claude/knowledge/[agent]/` | 1 | Framework | Early |
+| 4 | `aidlc/knowledge/aidlc-shared/` | 2 | Team | Mid |
+| 5 | `aidlc/knowledge/[agent]/` | 2 | Team | Mid |
+| 6 | Prior stage artifacts | -- | Dynamic | Last |
 
-> **Note:** 段 1–5 は `stage-protocol.md` 第 5 節が定義するエージェントナレッジの読み込みです。段 6（上流ステージの成果物）は、オーケストレータが実行時に足すコンテキストであり、ファイル読み込みの段ではありません。
+> **Note:** ステップ 1–5 は `stage-protocol.md` セクション 5 が定義するエージェントナレッジ読み込みです。ステップ 6（先行ステージ成果物）は、オーケストレータが実行時に足す文脈であり、ファイル読み込みステップではありません。
 
-### What Each Layer Contributes {#what-each-layer-contributes}
+### What Each Layer Contributes
 
-- ルール（段 1）が最初に載り、厳格加算の 5 層鎖（org → team → project → phase → stage）で解決されます — 当たるルールは全部コンテキストにあり、広い層は上書きされず、足されるだけです。[Rule System](08-rule-system.md)。
-- フレームワーク方法論（段 2–3）がベースラインの振る舞いを与えます。
-- チームナレッジ（段 4–5）が組織固有の文脈を足します。
-- 上流成果物（段 6）がワークフロー固有の文脈を与えます。
+- ルール（ステップ 1）が先に読み、厳格加算の 5 層チェーン（org → team → project → phase → stage）で解決します — 適用するルールはすべて文脈にあります。より広い層は上書きされず、足されるだけです。[Rule System](08-rule-system.md)。
+- フレームワーク方法論（ステップ 2–3）がベースラインの振る舞いを与えます。
+- チームナレッジ（ステップ 4–5）が組織固有の文脈を足します。
+- 先行成果物（ステップ 6）がワークフロー固有の文脈を与えます。
 
 ---
 
-## Template System {#template-system}
+## Template System
 
-### Knowledge README Template {#knowledge-readme-template}
+### Knowledge README Template
 
-`.claude/knowledge/aidlc-shared/knowledge-readme-template.md` は、チームが Tier 2 ディレクトリへコピーして文書化できる任意の README テンプレートを同梱します。エンジンは足場も種まきもしません — スペース単位の `aidlc/knowledge/` ディレクトリは空で作られ、チームが好きなものを足します。テンプレートが説明すること:
+`.claude/knowledge/aidlc-shared/knowledge-readme-template.md` は、チームが Tier 2 ディレクトリへコピーして文書化できる任意の README テンプレートを出荷します。エンジンは足場にも種まきもしません — スペース単位の `aidlc/knowledge/` ディレクトリは空で作られ、チームが欲しいものを足します。テンプレートが説明すること:
 
 - そのエージェント向けに足すファイルの種類
 - よくある寄せファイルの例
-- ファイルの載り方（エージェントが起動すると自動）
-- 特別な命名規則は要らない — どの `.md` も載る
+- ファイルの読み込み方（エージェントが起動すると自動）
+- 特別な命名規則は要らない — どの `.md` も読まれる
 
-### State Template {#state-template}
+### State Template
 
-エンジンは `.claude/knowledge/aidlc-shared/state-template.md` の契約に従って `aidlc-state.md` を生成します。テンプレートは必須の見出しとフィールドを定義します。具体的な Stage Progress 行は、コンパイル済みステージグラフとスコープ格子から出され、テンプレートに手で列挙しません。
+エンジンは `.claude/knowledge/aidlc-shared/state-template.md` の契約に従って `aidlc-state.md` を生成します。テンプレートは必須の節とフィールドを定義します。具体的な Stage Progress 行は、コンパイル済みステージグラフとスコープグリッドから出され、テンプレートで手列挙しません。
 
 ---
 
-## Adding Team Knowledge {#adding-team-knowledge}
+## Adding Team Knowledge
 
 会社固有のファイルをチームナレッジディレクトリへ足します:
 
@@ -180,11 +180,11 @@ aidlc/knowledge/aidlc-developer-agent/company-coding-conventions.md
 aidlc/knowledge/aidlc-quality-agent/company-testing-standards.md
 ```
 
-ファイルはエージェントが起動すると自動で載ります（読み込み順の段 4–5）。設定の変更は要りません。ディレクトリに置いたどの `.md` も載ります。
+ファイルはエージェントが起動すると自動で読みます（読み込み順のステップ 4–5）。設定変更は不要です。ディレクトリに置いたどの `.md` も読まれます。
 
-### Knowledge by Agent {#knowledge-by-agent}
+### Knowledge by Agent
 
-> この表はスナップショットです。各エージェントの権威ある `display_name` + `examples` は、`core/agents/<slug>-agent.md` のエージェント frontmatter にあり、`core/tools/aidlc-lib.ts` の `loadAgents()` 経由でプログラムから出ます。新しいエージェントは先にそちらへ足し、同じ PR でこの表を更新してください。
+> この表はスナップショットです。各エージェントの権威ある `display_name` + `examples` は、エージェントの frontmatter `core/agents/<slug>-agent.md` にあり、`core/tools/aidlc-lib.ts` の `loadAgents()` 経由でプログラムから面に出ます。新しいエージェントは先にそこに足し、同じ PR でこの表を更新します。
 
 | Directory | Purpose | Example Files |
 |-----------|---------|---------------|
@@ -197,15 +197,15 @@ aidlc/knowledge/aidlc-quality-agent/company-testing-standards.md
 | `aidlc-quality-agent/` | テスト標準 | `test-strategy.md`、`coverage-requirements.md` |
 | `aidlc-devsecops-agent/` | セキュリティ方針 | `security-baseline.md`、`compliance-rules.md` |
 | `aidlc-aws-platform-agent/` | クラウド文脈 | `account-structure.md`、`service-limits.md` |
-| `aidlc-compliance-agent/` | コンプライアンス規則 | `data-governance.md`、`audit-requirements.md` |
+| `aidlc-compliance-agent/` | コンプライアンスルール | `data-governance.md`、`audit-requirements.md` |
 | `aidlc-pipeline-deploy-agent/` | CI/CD 標準 | `pipeline-standards.md`、`deployment-gates.md` |
 | `aidlc-operations-agent/` | Ops ランブック | `monitoring.md`、`incident-response.md` |
 
 ---
 
-## Cross-References {#cross-references}
+## Cross-References
 
-- [Architecture](01-architecture.md) — 5 層模型のナレッジ層
+- [Architecture](01-architecture.md) — 5 層モデルのナレッジ層
 - [Agent System](05-agent-system.md) — エージェント frontmatter と設定
 - [Stage Protocol](04-stage-protocol.md) — エージェントペルソナ読み込みの節
 - [Hooks and Tools](06-hooks-and-tools.md) — audit-format.md の分類（共有ナレッジに同梱）
