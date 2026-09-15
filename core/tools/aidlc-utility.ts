@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { stampWorkflowConfiguration, admitCustomizationOperation, finishCustomizationOperation, transferCustomizationOperation } from "./aidlc-customization-guard.ts";
 import {
   cpSync,
   existsSync,
@@ -6057,6 +6058,7 @@ function handleIntentCreate(projectDir: string, flags: Record<string, string>): 
     if (lockedMemoryStrict !== null && requestedChangeControl === "relaxed") {
       die(changeControlMemoryStrictRefusal(lockedMemoryStrict));
     }
+    _resetScopeMappingForTests();
     const lockedScopeDef = loadScopeMapping()[scope];
     if (!lockedScopeDef) die(`Unknown scope: ${scope}`);
     const effectiveChangeControl =
@@ -6451,6 +6453,8 @@ ${stageProgress}
     `${JSON.stringify(rawProjectDesc)}\n`,
   );
   writeStateFile(projectDir, stateContent, createdDir, createdSpace);
+  stampWorkflowConfiguration(projectDir, createdSpace, createdDir);
+  transferCustomizationOperation(projectDir, resolveWorkflowSelection(projectDir).sessionId ?? "sessionless", createdSpace, createdDir);
 
   appendAuditEvent(projectDir, "WORKSPACE_INITIALISED", {
     Request: `/aidlc ${flags.arguments || scope}`,
@@ -9037,7 +9041,22 @@ export async function main(argv: string[]): Promise<void> {
   }
   const projectDir = resolveProjectDir(flags["project-dir"]);
 
+  if (isIntentCreate) {
+    const session = resolveWorkflowSelection(projectDir).sessionId ?? "sessionless";
+    const operation = `intent-create:${process.pid}`;
+    admitCustomizationOperation(projectDir, session, operation);
+    _resetScopeMappingForTests();
+    try { handleIntentCreate(projectDir, flags); }
+    finally { finishCustomizationOperation(projectDir, session, operation); }
+    return;
+  }
+
   switch (subcommand) {
+    case "compose-end":
+      if (flags["confirmed-ended"] !== "true") die("compose-end requires --confirmed-ended after the composer worker has stopped and the proposal has been resolved.");
+      finishCustomizationOperation(projectDir, resolveWorkflowSelection(projectDir).sessionId ?? "sessionless", "compose");
+      process.stdout.write("Compose operation completed.\n");
+      break;
     case "help":
       handleHelp();
       break;

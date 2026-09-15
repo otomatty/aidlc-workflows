@@ -88,6 +88,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
+import { admitCustomizationOperation, finishCustomizationOperation, assertWorkflowConfiguration } from "./aidlc-customization-guard.ts";
+import { withAuditLock } from "./aidlc-lib.ts";
+import { __resetGraphCache } from "./aidlc-graph.ts";
+import { _resetHarnessDataForTests } from "./aidlc-lib.ts";
 import { fileURLToPath } from "node:url";
 import {
   type AskDirective,
@@ -327,6 +331,7 @@ interface PreparedLegacyPlanApproval {
 let engineInvocation: { attemptId?: string; commandKind: "next" | "continue" | "report" | "park"; commandSha256: string } | null = null;
 let activeStageValidityAdvisory: StageValidityAdvisory | undefined;
 let engineProjectDir: string | undefined;
+let customizationOperation: { projectDir: string; sessionId: string; operationId: string; completed: boolean } | null = null;
 
 function projectStageValidityAdvisory(
   projectDir: string,
@@ -594,6 +599,7 @@ function attachLegacyKiroPlanApprovalChoices(
 }
 
 function writePrepared(prepared: PreparedEmission): void {
+  if (customizationOperation && prepared.transported.kind === "done") customizationOperation.completed = true;
   writeFileSync(1, `${prepared.serialized}\n`, "utf-8");
 }
 
@@ -1870,6 +1876,7 @@ function composeDispatchDirective(
     ? "the composer's mode is IN-FLIGHT and FINAL for the returned delta: nearest_stock is advisory, the running scope and frozen actions stay unchanged, and approval uses only changes.skip/changes.add through recompose; neither presentation nor comparison with stock grids may alter that delta"
     : "the composer's mode is FINAL for the grid it returned: it routed matched-vs-custom solely on the final proposal validator's nearest_stock distance, a matched proposal already carries the revalidated stock grid verbatim, and neither presentation nor your own comparison of grids ever changes the verdict - never re-derive it, and a MATCHED proposal writes no scope file; if the human edits that stock grid, re-dispatch the composer, which must convert it to CUSTOM and revalidate before re-presenting";
   parts.push(
+    `After this compose operation has fully ended (a rejected proposal with its worker stopped, or successful application/creation of the approved plan), run \`bun ${hd}/tools/aidlc-utility.ts compose-end --confirmed-ended\` to close its configuration lease. Do not close it while editing, waiting for approval, or while a composer worker is running.`,
     `The composer runs \`${aidlcDispatcherInvocation("workspace detect")} --json\` (read-only scan + scope-registry paths), estimates the five entropy components (intent ambiguity, structural uncertainty, verification entropy, risk, unresolved assumptions) per its persona, and returns a structured proposal: ${proposalShape}.`,
     `Render the proposal to the human as THREE blocks before the approve/edit/reject gate (see the composer block in SKILL.md), leading with plain language rather than the scores: (1) a two-or-three-sentence recommendation in your own words - what kind of change this looks like, how much process you suggest, and the steps in plain terms - followed by the validator's summary line formatted "<execute> stages EXECUTE / <skip> SKIP, <gates> approval gates" plus scopeName and mode (${modeContract}), then its own row "Change Control: <changeControl> - <changeControlRationale>" so the human can flip that value before approving${inFlight ? "" : " (on approval pass it to creation as `--change-control <value>`)"}; (2) the composer's stage-decision table verbatim, with any fold advisories beneath it; (3) under a "Scoring detail (advisory)" heading, the composer's ARS score table verbatim with its method line and arsRationale. Relay the composer's tables and numbers as returned - never recompute, collapse into prose, or drop them. Do NOT write any file and do NOT advance any stage before an explicit approval.`,
   );
@@ -9335,7 +9342,21 @@ export function main(argv: string[]): void {
   const subArgs = filteredArgs.slice(1);
   if (engineInvocation !== null) throw new Error("Nested aidlc-orchestrate dispatch is not supported");
   const resolvedProjectDir = resolveProjectDir(projectDir);
-  const resolvedSelection = resolveWorkflowSelection(resolvedProjectDir);
+  const resolvedSelection = withAuditLock(resolvedProjectDir, () => {
+    const selection = resolveWorkflowSelection(resolvedProjectDir);
+    _resetHarnessDataForTests(); __resetGraphCache();
+    const flags = subcommand === "next" ? parseNextFlags(subArgs) : subcommand === "report" ? parseReportFlags(subArgs) : {};
+    const nextFlags = flags as ParsedFlags;
+    const probe = isReadOnlyEngineProbe() || subcommand === "team-board" || Boolean(nextFlags.readOnly);
+    const startsNew = subcommand === "next" && nextFlags.newIntent;
+    if (!probe && !startsNew && selection.intent) assertWorkflowConfiguration(resolvedProjectDir, selection.space, selection.intent);
+    const record = !probe && !startsNew && !flags.single && !nextFlags.compose && selection.intent ? { space: selection.space, intent: selection.intent } : undefined;
+    const operationId = probe ? `probe:${process.pid}:${Date.now()}` : flags.single ? `single:${flags.stage ?? "unknown"}` : nextFlags.compose ? "compose" : record ? `workflow:${record.space}/${record.intent}` : "workflow";
+    const sessionId = selection.sessionId ?? "sessionless";
+    admitCustomizationOperation(resolvedProjectDir, sessionId, operationId, record);
+    customizationOperation = { projectDir: resolvedProjectDir, sessionId, operationId, completed: probe };
+    return selection;
+  });
   engineProjectDir = resolvedProjectDir;
   engineSessionId = resolvedSelection.sessionId ?? undefined;
   engineSelections.clear();
@@ -9377,6 +9398,10 @@ export function main(argv: string[]): void {
         process.exit(1);
     }
   } finally {
+    if (customizationOperation && (customizationOperation.completed || isReadOnlyEngineProbe() || subcommand === "team-board")) {
+      finishCustomizationOperation(customizationOperation.projectDir, customizationOperation.sessionId, customizationOperation.operationId);
+    }
+    customizationOperation = null;
     engineInvocation = null;
     engineProjectDir = undefined;
     engineSessionId = undefined;

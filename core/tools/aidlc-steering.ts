@@ -11,6 +11,8 @@ import {
   errorMessage,
   resolveWorkflowSelection,
   toPosix,
+  withAuditLock,
+  assertConfigurationAdmission,
 } from "./aidlc-lib.ts";
 import {
   type GraphStage,
@@ -85,6 +87,16 @@ export function rulesContentEntries(
 export function readRuleBundle(
   entries: RuleEntry[],
 ): { content: RuleContent[]; error: string | null } {
+  const normalized = entries[0]?.abs.replaceAll("\\", "/");
+  const marker = normalized?.indexOf("/aidlc/spaces/") ?? -1;
+  if (marker >= 0) {
+    const root = normalized!.slice(0, marker);
+    return withAuditLock(root, () => { assertConfigurationAdmission(root); return readRuleBundleUnlocked(entries); });
+  }
+  return readRuleBundleUnlocked(entries);
+}
+
+function readRuleBundleUnlocked(entries: RuleEntry[]): { content: RuleContent[]; error: string | null } {
   const content: RuleContent[] = [];
   const seen = new Set<string>();
   for (const entry of entries) {

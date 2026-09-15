@@ -42,6 +42,8 @@ For the full architecture, see [reference/01-architecture.md](01-architecture.md
 
 ## Development Workflow
 
+For Guide and IDE configuration editing, see the [customization coordinator contract](21-customization-contract.md). It owns candidate generation, admission, installation replay, and recovery.
+
 1. **Fork and branch** from `main` (the integration branch and PR target), then run `bun install --frozen-lockfile`
 2. **Read the architecture** -- [reference/01-architecture.md](01-architecture.md) explains the execution model, agent delegation, and hook system
 3. **Understand the entry points** -- the deterministic engine `core/tools/aidlc-orchestrate.ts` (with exactly five subcommands: `next`, `continue`, `report`, `park`, and `team-board`; `continue` is internal steering transport and `team-board` is the read-only Team Construction query) owns routing; the conductor `harness/claude/skills/aidlc/SKILL.md` is a thin forwarding loop that acts on its directives. For the normative engine / directive / conductor / swarm contract see [The Skill System](17-skill-system.md)

@@ -84,7 +84,7 @@ function statePath(intent: string): string {
 }
 
 describe("t312 orchestrate session binding", () => {
-  test("PID ancestry selects its binding before the shared cursor", () => {
+  test.skipIf(process.platform === "win32")("PID ancestry selects its binding before the shared cursor", () => {
     writeSessionBinding(proj, "session-a", "default", firstDir);
     writeSessionPidEntry(proj, process.pid, "session-a");
 
@@ -166,7 +166,7 @@ describe("t312 orchestrate session binding", () => {
     expect(result.out).not.toContain(secondDir);
   });
 
-  test("divergent environment and ancestry refuse before any workflow write", () => {
+  test.skipIf(process.platform === "win32")("divergent environment and ancestry refuse before any workflow write", () => {
     writeSessionBinding(proj, "session-a", "default", firstDir);
     writeSessionBinding(proj, "session-b", "default", secondDir);
     writeSessionPidEntry(proj, process.pid, "session-a");

@@ -59,6 +59,7 @@ import {
 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import type { HarnessManifest } from "./manifest-types.ts";
 import {
   absorbReviewerKnowledge,
@@ -939,7 +940,27 @@ function buildTree(
   //    them only after emit(), because Codex and Copilot place the orchestrator
   //    skill outside <harnessDir>/skills/.
   refreshGeneratedSkillRegions(outRoot, treeRoot, harnessDir, m);
+  emitCustomizationContract(treeRoot);
   return [...walk(outRoot)];
+}
+
+function emitCustomizationContract(treeRoot: string): void {
+  const guards: Record<string, string> = {};
+  for (const rel of ["tools/aidlc-lib.ts", "tools/aidlc-orchestrate.ts", "tools/aidlc-utility.ts", "tools/aidlc-steering.ts", "tools/aidlc-init.ts", "tools/aidlc-customization-guard.ts", "hooks/aidlc-session-start.ts"]) {
+    const path = join(treeRoot, rel);
+    if (!existsSync(path)) throw new Error(`Customization guard is missing: ${rel}`);
+    guards[rel] = `sha256:${createHash("sha256").update(readFileSync(path)).digest("hex")}`;
+  }
+  for (const dir of ["aidlc-common/stages", "agents", "scopes", "sensors"]) {
+    const src = join(treeRoot, dir);
+    if (!existsSync(src)) continue;
+    for (const file of walk(src)) if (file.endsWith(".md")) {
+      const dst = join(treeRoot, "tools/data/customization-baseline", dir, relative(src, file));
+      mkdirSync(dirname(dst), { recursive: true }); cpSync(file, dst);
+    }
+  }
+  cpSync(join(treeRoot, "tools/data/agent-tiers.json"), join(treeRoot, "tools/data/customization-baseline/agent-tiers.json"));
+  writeFileSync(join(treeRoot, "tools/data/customization-capabilities.json"), `${JSON.stringify({ protocolVersion: 1, guards }, null, 2)}\n`);
 }
 
 function escapeRegExp(value: string): string {
@@ -1275,6 +1296,8 @@ function rewriteNativeInvocations(
 
   const leftovers: string[] = [];
   for (const file of walk(outRoot)) {
+    // Immutable source baselines are comparison data, not harness entrypoints.
+    if (relative(outRoot, file).split(sep).join("/").includes("/customization-baseline/")) continue;
     if (!/\.(?:md|json|toml|hook|ts)$/.test(file)) continue;
     const value = readFileSync(file, "utf-8");
     for (const token of ["{{INVOKE}}", "{{TOOL_PREFIX}}"]) {
@@ -1304,6 +1327,7 @@ function rewriteNativeInvocations(
   if (leftovers.length > 0) {
     throw new Error(`[${m.name}] native invocation projection failed:\n${leftovers.join("\n")}`);
   }
+  emitCustomizationContract(join(outRoot, m.harnessDir));
 }
 
 // Run an in-tree tool (bun <treeRoot>/<rel> ...) with the harness env seams set
