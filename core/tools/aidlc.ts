@@ -116,6 +116,7 @@ type Alias = {
 };
 
 export const TOOLS = {
+  customization: "aidlc-customization.ts",
   attest: "aidlc-attest.ts",
   audit: "aidlc-audit.ts",
   bolt: "aidlc-bolt.ts",
@@ -1028,6 +1029,16 @@ export const ROUTES: readonly Route[] = [
     tool: TOOLS.orchestrate,
     ...HIDDEN_ENGINE,
     all: ["next [args]", "continue <token>", "report [args]", "park [args]"],
+  },
+  {
+    id: "engine-customization",
+    group: "customization",
+    kind: "noun-passthrough",
+    classification: "passthrough",
+    verbs: ["capabilities", "catalog", "validate", "generate", "plan", "apply", "recover", "operation", "export", "end-operation", "install-plan"],
+    tool: TOOLS.customization,
+    ...HIDDEN_ENGINE,
+    all: ["<command> --project-dir <workspace> (JSON stdin)"],
   },
   {
     id: "engine-orchestrate-help",
@@ -1989,6 +2000,7 @@ function runDelegateDev(tool: string, args: string[]): number {
   try {
     const child = Bun.spawnSync([bunExecutable(), toolPath(tool), ...args], { /* dev-mode bun spawn */
       cwd: process.cwd(),
+      stdin: "inherit",
       stdout: "inherit",
       stderr: "inherit",
       env: {
@@ -2011,6 +2023,8 @@ type DelegateModule = {
 
 async function loadDelegate(tool: string): Promise<DelegateModule | null> {
   switch (tool) {
+    case TOOLS.customization:
+      return import("./aidlc-customization.ts");
     case TOOLS.attest:
       return import("./aidlc-attest.ts");
     case TOOLS.audit:

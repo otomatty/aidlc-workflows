@@ -1627,7 +1627,6 @@ function literalEngineCommand(seg: string): { command: string; args: string[] } 
         if (i + 1 >= args.length) return null;
         i++;
       } else if (!literal && native && ["--json", "--quiet", "--no-color", "--yes", "--offline", "--verbose"].includes(arg)) {
-        continue;
       } else {
         clean.push(arg);
       }
@@ -4246,6 +4245,7 @@ export function resolveWorkflowSelection(
   projectDir: string,
   options: WorkflowSelectionOptions = {},
 ): WorkflowSelection {
+  assertConfigurationAdmission(projectDir);
   const explicitSession = validSessionId(options.sessionId);
   let sessionId: string | null;
   if (explicitSession) {
@@ -23828,6 +23828,20 @@ export function readAppendOnlyFileNoFollowOrThrow(path: string, what: string): B
 // callers are all sync (compile, state.ts fork/merge); future async-locked
 // transactions need a separate `withAuditLockAsync` that awaits before
 // release. The compile-time guard catches the footgun at the call site.
+let configurationTransactionDepth = 0;
+
+/** Only the configuration transaction coordinator may read its pending files. */
+export function withConfigurationTransactionAccess<T>(fn: () => T): T {
+  configurationTransactionDepth++;
+  try { return fn(); } finally { configurationTransactionDepth--; }
+}
+
+export function assertConfigurationAdmission(projectDir: string): void {
+  if (configurationTransactionDepth === 0 && existsSync(join(projectDir, "aidlc/.aidlc-customization/pending.json"))) {
+    throw new Error("Configuration application is pending. Run customization recover before continuing.");
+  }
+}
+
 export function withAuditLock<T>(
   projectDir: string,
   fn: () => T extends Promise<unknown> ? never : T,
@@ -23876,6 +23890,7 @@ export function withAuditLock<T>(
   }
   AUDIT_LOCK_DEPTH.set(key, currentDepth + 1);
   try {
+    assertConfigurationAdmission(projectDir);
     return fn();
   } finally {
     const depth = AUDIT_LOCK_DEPTH.get(key) ?? 0;

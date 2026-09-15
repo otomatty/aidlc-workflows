@@ -715,7 +715,10 @@ function appendAuditBlockAtPath(
   try {
     fd = openSync(
       shardPath,
-      fsConstants.O_RDWR |
+      // Bun on Windows does not consistently create a missing file with the
+      // numeric O_CREAT mask. The string mode has the same append/read intent;
+      // the path-chain and descriptor checks below remain mandatory.
+      process.platform === "win32" ? "a+" : fsConstants.O_RDWR |
         fsConstants.O_APPEND |
         fsConstants.O_CREAT |
         noFollow |

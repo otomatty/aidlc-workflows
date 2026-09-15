@@ -17,6 +17,9 @@ import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { extractTarGz } from "./aidlc-archive.ts";
+import { assertCustomizationUpdatePrepared, storeCustomizationPlan, applyCustomization } from "./aidlc-customization-transaction.ts";
+import { generateInstallationPlan } from "./aidlc-customization-install.ts";
+import { customizationCapabilities, customizationBootstrapEligible } from "./aidlc-customization-model.ts";
 import {
   EXIT,
   emitResult,
@@ -3086,10 +3089,11 @@ function executeGlobalSettingsMutation(
 function executeSettingsAndProjectMutation(
   mutation: SettingsMutation | undefined,
   projectPlan: TransactionPlan,
+  executeProject: () => void = () => { executePlan(projectPlan); },
 ): void {
   const operation = globalSettingsOperation(mutation);
   if (!operation || !mutation) {
-    executePlan(projectPlan);
+    executeProject();
     return;
   }
   const machinePlan: TransactionPlan = {
@@ -3129,7 +3133,7 @@ function executeSettingsAndProjectMutation(
     invalidateSettingsCache(mutation.path);
   }
   try {
-    executePlan(projectPlan);
+    executeProject();
   } catch (error) {
     const restoreOperations: TransactionOperation[] = priorBytes === null
       ? committed === "absent"
@@ -6336,8 +6340,23 @@ export async function main(
       ]),
     );
     const plan: TransactionPlan = { schemaVersion: 1, root: projectDir, operations };
+    const customizationPlan = (customizationCapabilities(projectDir).canApply || (operations.some(operation => operation.path.endsWith("customization-capabilities.json")) && customizationBootstrapEligible(projectDir)))
+      ? withAuditLock(projectDir, () => generateInstallationPlan(projectDir, {
+          schemaVersion: 1,
+          installationFiles: operations.map(operation => {
+            if (operation.kind !== "write" && operation.kind !== "copy" && operation.kind !== "remove") throw new Error(`Customization does not support ${operation.kind} installation operations`);
+            const path = join(projectDir, operation.path);
+            const current = transactionState(path);
+            if (operation.expected !== undefined && operation.expected !== current) throw new Error(`Configuration changed while preparing ${operation.path}`);
+            if (operation.kind === "copy" && sha256File(operation.source) !== operation.sourceHash) throw new Error(`Installation source changed: ${operation.source}`);
+            return { relativePath: operation.path.replaceAll("\\", "/"), beforeHash: current === "absent" ? null : current, afterBase64: operation.kind === "remove" ? null : operation.kind === "write" ? operation.data : readFileSync(operation.source).toString("base64"), ...(operation.kind !== "remove" ? { mode: operation.mode } : {}) };
+          }),
+        }))
+      : null;
+    if (customizationPlan && (!customizationPlan.canApply || customizationPlan.diagnostics.some(d => d.severity === "error"))) throw new Error(`Customization rebase failed: ${customizationPlan.diagnostics.map(d => d.message).join("; ")}`);
     const approvalPlan = {
       ...plan,
+      ...(customizationPlan ? { customization: { configurationRevision: customizationPlan.configurationRevision, files: customizationPlan.files.map(f => ({ relativePath: f.relativePath, beforeHash: f.beforeHash, afterHash: f.afterHash })) } } : {}),
       operations: plan.operations.map((operation) =>
         operation.kind === "copy"
           ? {
@@ -6385,6 +6404,7 @@ export async function main(
           counts,
           actions,
           planToken,
+          ...(customizationPlan ? { customization: { configurationRevision: customizationPlan.configurationRevision, files: customizationPlan.files.map(f => ({ relativePath: f.relativePath, beforeHash: f.beforeHash, afterHash: f.afterHash })), diagnostics: customizationPlan.diagnostics } } : {}),
           ...(modelsContext
             ? {
                 models: {
@@ -6441,7 +6461,11 @@ export async function main(
         projectDir,
         () => {
           assertRefreshSafe(projectDir);
-          executeSettingsAndProjectMutation(settingsMutation, plan);
+          if (!customizationPlan) assertCustomizationUpdatePrepared(projectDir);
+          executeSettingsAndProjectMutation(settingsMutation, plan, customizationPlan ? () => {
+            storeCustomizationPlan(projectDir, customizationPlan);
+            applyCustomization(projectDir, { schemaVersion: 1, requestId: `native-config-${planToken}`, planId: customizationPlan.id, expectedConfigurationRevision: customizationPlan.configurationRevision });
+          } : undefined);
         },
         undefined,
         undefined,

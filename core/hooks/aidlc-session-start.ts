@@ -66,9 +66,11 @@ import {
 } from "../tools/aidlc-lib.ts";
 import { writeCurrentTranscriptPath } from "../tools/aidlc-usage.ts";
 import { aidlcToolInvocation } from "../tools/aidlc-runtime-paths.ts";
+import { assertCustomizationReadable } from "../tools/aidlc-customization-guard.ts";
 
 export async function run(input: string): Promise<number> {
 const projectDir = resolveProjectDirFromHook(import.meta.url);
+assertCustomizationReadable(projectDir);
 
 // Read stdin before the workflow-state gate. A fresh session commonly starts
 // before the first intent is created; retaining its id lets intent-create stamp
