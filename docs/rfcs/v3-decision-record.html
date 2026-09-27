@@ -165,14 +165,14 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <h1>AI-DLC Workflows v3 — ここまでに決まったこと</h1>
   <p class="lede">v2.10.0 から v3.0.0 へ。最小限のハーネスとステージで構成し、判断は強いモデルに任せ、機械的にできることはフックに任せ、品質を「証拠と参照元」で保証し、人はコードではなく「主張と証拠」を読む。人の関与は Intent 承認と PR 承認の2回に絞り、作業単位の分割でレビューを最小にする。この文書は設計前の合意事項をまとめたもので、設計の詳細はまだ決めていない。</p>
   <div class="meta">
-    <span>更新 <b>2026-09-26</b></span>
+    <span>更新 <b>2026-09-27</b></span>
     <span>対象モデル <b>Opus 5.5</b></span>
     <span>ハーネス <b>Claude Code / Codex</b></span>
     <span>ランタイム <b>node（フック用）</b></span>
     <span>状態 <span class="pill accent">要件整理まで完了</span></span>
   </div>
   <div class="revlog">
-    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する。</p>
+    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する。</p>
     <p><b>rev 2</b>（<span class="pill rev">改訂</span>）：監査ログの踏襲／フックの活用／知識の鮮度と参照元／根本解決の最小実装／契約先行／モブ・エラボレーションの統合と確認点／質問数の無制限／脇質問と再開。</p>
   </div>
   <nav class="toc" aria-label="目次">
@@ -297,7 +297,8 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">監査ログ <span class="pill rev3">rev 3</span></td><td>v2 の仕組みを踏襲し、目的を「後で分析するための計測データ」と定める</td><td>各イベントの所要時間・待ち時間・回数・トークンなど取得できるデータを構造化（JSONL）で記録する。フックだけが書く（§11）</td></tr>
       <tr><td class="k">フック</td><td>機械的に処理できることは積極的にフックに任せる</td><td>検査・記録・遮断はフック、判断はモデル。判断を代行させない（§11）</td></tr>
       <tr><td class="k">判断依頼の形式 <span class="pill rev3">rev 3</span></td><td>人に判断を仰ぐ時は、選択肢を提示し、各選択肢のメリット・デメリットを根拠（コード・公式文書）つきで説明する</td><td>推奨案と、未回答時の既定動作も添える（§10）</td></tr>
-      <tr><td class="k">人のレビュー <span class="pill rev3">rev 3</span></td><td>Intent 承認と PR 承認の2回に絞る。作業単位を分割してレビューを最小にする</td><td>H の変更は最小の Intent に隔離し、L/M はまとめる（§6）</td></tr>
+      <tr><td class="k">人のレビュー <span class="pill rev3">rev 3</span></td><td>Intent 承認と PR 承認の2回に絞る。作業単位を分割してレビューを最小にする。L 階層の PR も人が Brief をスキムしてマージする（自動マージはしない）</td><td>H の変更は最小の Intent に隔離し、L/M はまとめる（§6）。「人が PR をマージする」に例外を設けない</td></tr>
+      <tr><td class="k">未回答の判断依頼 <span class="pill rev3">rev 3</span></td><td>既定案で進めて Brief に明記する。止まるのは既定案が作れない時だけ</td><td>人の回答を待って作業が止まることがなくなる。既定案で進めた判断は Brief §7 に一覧で載り、PR 承認時に覆せる（§10）</td></tr>
       <tr><td class="k">知識と参照元</td><td>既存コード・設計・インフラ・背景・規約を常に最新に保ち、成果物に参照元を必ず載せる</td><td>鮮度チェックと引用検査はフック、再走査は explorer（§12）</td></tr>
       <tr><td class="k">実装の姿勢</td><td>理想の設計・ユースケースの漏れ・リファクタ候補を常に意識し、根本解決の必要最小限の実装をする</td><td>Intent と Design に「理想形との差分」を必ず含める（§13）</td></tr>
       <tr><td class="k">実装前の固め</td><td>TDD に加えて、型定義・データ定義・静的解析を実装前にチェックする</td><td>契約 → テスト → 実装 の順をコミット順で証明し、フックが検査する（§11）</td></tr>
@@ -556,7 +557,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
     <tbody>
       <tr><td class="k">確認点</td><td>モブ・エラボレーションの途中</td><td>1画面の要約（AC 群、分割案、Unit と階層、設計の要点）</td><td>「この理解で合っているか」</td><td>同期（非同期でも可）</td></tr>
       <tr><td class="k">Intent 承認 <span class="pill human">◆</span></td><td>モブ・エラボレーションの最後</td><td>1画面 Intent（＋ 必要時 design.md の差分図）</td><td>この計画で作ってよいか</td><td>同期</td></tr>
-      <tr><td class="k">先送りできない判断依頼</td><td>Build / Verify の途中。これ以上進めないと止まる時だけ</td><td>判断依頼カード（§10）</td><td>選択肢から選ぶ。既定案で進める指示も可</td><td>非同期。他 Unit は止めない</td></tr>
+      <tr><td class="k">先送りできない判断依頼</td><td>Build / Verify の途中。これ以上進めないと止まる時だけ</td><td>判断依頼カード（§10）</td><td>選択肢から選ぶ。未回答なら既定案で進み、Brief §7 に明記される</td><td>非同期。他 Unit は止めない。既定案が作れない時だけ止まる</td></tr>
       <tr><td class="k">PR 承認 <span class="pill human">◆</span></td><td>Verify の後、モブ・レビュー</td><td>Review Brief（L/M）。H はコアロジックの hunk も</td><td>溜まった判断依頼への回答、マージの可否</td><td>同期、または PR 上で非同期</td></tr>
       <tr><td class="k">Learn</td><td>モブ・レビューの末尾5分</td><td>rules.md への追記案</td><td>採用するか</td><td>同期</td></tr>
     </tbody>
@@ -639,7 +640,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
     <div class="card"><h3>人のレビュー量を減らす他の仕組み</h3>
       <ul style="margin-bottom:0">
         <li>読むべき箇所ガイドで、hunk を core / plumbing / tests / generated / rename に分類し、読まなくてよいものを明示する</li>
-        <li>L 階層は Brief の「主張と証拠」と破壊検査の結果だけで判断できる形にする</li>
+        <li>L 階層は Brief の「主張と証拠」と破壊検査の結果だけで判断できる形にする。マージは人が行う（自動マージはしない）</li>
         <li>判断依頼はすべて選択肢と根拠つきで、人が調べる時間をゼロにする（§10）</li>
         <li>記録にある答えは再質問しない。脇質問の答えも記録に残る</li>
         <li>監査ログで「人がレビューに使った時間」を計測し、Intent の振り返りで分割の粒度を調整する</li>
@@ -774,7 +775,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="tbl"><table>
     <thead><tr><th>階層</th><th>Design</th><th>破壊検査</th><th>人のレビュー</th><th>分割での扱い</th><th>例</th></tr></thead>
     <tbody>
-      <tr><td class="k"><span class="pill ok">L</span></td><td>不要</td><td>なし</td><td>Brief をスキム</td><td>まとめてよい</td><td>文言修正、設定値、テスト追加、振る舞い不変のリファクタ</td></tr>
+      <tr><td class="k"><span class="pill ok">L</span></td><td>不要</td><td>なし</td><td>Brief をスキムして人がマージ（自動マージなし）</td><td>まとめてよい</td><td>文言修正、設定値、テスト追加、振る舞い不変のリファクタ</td></tr>
       <tr><td class="k"><span class="pill human">M</span></td><td>任意</td><td>1箇所</td><td>Brief ＋ 読むべき箇所ガイドの5分版</td><td>まとめてよい</td><td>既存 API の内部変更</td></tr>
       <tr><td class="k"><span class="pill warn">H</span></td><td>必須</td><td>3箇所</td><td>Brief ＋ コアロジックの hunk を人が読む。モブ・コンストラクション任意</td><td>最小の Intent に隔離</td><td>認証、決済、データ移行、公開契約の変更</td></tr>
     </tbody>
@@ -812,14 +813,15 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         <li><b>選択肢</b>：2〜4 つ。「何もしない」も選択肢として検討し、載せない場合は理由を書く</li>
         <li><b>各選択肢のメリット・デメリット・根拠</b>：根拠はコードの該当箇所（<code>パス:行@コミット</code>）か公式文書（URL＋節）。推測は「推測」と明記</li>
         <li><b>推奨</b>：モデルの推奨と理由</li>
-        <li><b>未回答時の既定</b>：既定案で進めるか、止まるか。進める場合は Brief に明記</li>
+        <li><b>未回答時の既定</b>：必ず既定案を示す。未回答なら既定案で進め、Brief §7 に「Q-n 未回答・既定 X」と明記する。止まるのは既定案が作れない時だけで、その理由を書く</li>
         <li><b>ブロックの有無と影響範囲</b>：どの Unit が止まるか、他は継続するか</li>
       </ul>
     </div>
     <div class="card"><h3>運用</h3>
       <ul style="margin-bottom:0">
         <li>ハーネスの構造化質問（Claude Code の <code>AskUserQuestion</code>、Codex の <code>request_user_input</code>）で選択肢を出し、カード本体は <code>decisions.md</code> に書く</li>
-        <li>先送りできる判断依頼は Brief §6 に溜め、PR 承認時にまとめて答える。先送りできないもの（これ以上進めない）だけ即時に出す</li>
+        <li>先送りできる判断依頼は Brief §6 に溜め、PR 承認時にまとめて答える。先送りできないもの（これ以上進めない）だけ即時に出し、回答が来なければ既定案で進める</li>
+        <li>既定案で進めた判断は Brief §7 に一覧で載る。人は PR 承認時に覆せる。覆された場合は builder に戻して修正し、reviewer を再実行する</li>
         <li>回答は人の言葉のまま <code>decisions.md</code> に記録し、監査ログに「質問 → 回答」の所要時間が残る</li>
         <li>同じ論点は二度と聞かない。過去の回答は参照元として引く</li>
         <li>Learn で、繰り返し出る論点は <code>rules.md</code> の規約に昇格させる</li>
@@ -1172,17 +1174,16 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <h3 style="margin-top:0">次に決めること</h3>
       <div class="q"><span class="n">Q1</span><div><b>監査イベントの最小集合と計測項目</b>：v2 の 91 種からどれを残し、何を足すか。各イベントに持たせる計測値（所要時間、待ち時間、トークン、回数）</div></div>
       <div class="q"><span class="n">Q2</span><div><b>確認点の粒度の既定</b>：AC グループごと / Unit ごと / 設計セクションごと</div></div>
-      <div class="q"><span class="n">Q3</span><div><b>L 階層の PR の扱い</b>：人が Brief をスキムしてマージするか、CI 全通過 ＋ reviewer 合格で自動マージを認めるか（認める場合、不変条件「人が PR をマージする」に例外を設ける）<span class="pill rev3">rev 3</span></div></div>
-      <div class="q"><span class="n">Q4</span><div><b>未回答の判断依頼の既定動作</b>：既定案で進めて Brief に明記する（推奨）か、必ず止まるか。階層ごとに変えるか<span class="pill rev3">rev 3</span></div></div>
-      <div class="q"><span class="n">Q5</span><div>多層品質モデルの各層を、どのリスク階層で必須にするか（例：セキュリティ観点表は H のみ、契約の整合は全階層）</div></div>
-      <div class="q"><span class="n">Q6</span><div>図の標準セット：コンテキスト / コンポーネント / シーケンス / データ / 状態のうち、Intent・Design・Brief でそれぞれ何を必須にするか</div></div>
-      <div class="q"><span class="n">Q7</span><div>AI 操作による検証の環境：ブラウザ操作やアプリ起動をどこで行うか（ローカル、コンテナ、CI）</div></div>
-      <div class="q"><span class="n">Q8</span><div>Brief と判断依頼の言語：日本語固定か、<code>rules.md</code> で選択か</div></div>
+      <div class="q"><span class="n">Q3</span><div>多層品質モデルの各層を、どのリスク階層で必須にするか（例：セキュリティ観点表は H のみ、契約の整合は全階層）</div></div>
+      <div class="q"><span class="n">Q4</span><div>図の標準セット：コンテキスト / コンポーネント / シーケンス / データ / 状態のうち、Intent・Design・Brief でそれぞれ何を必須にするか</div></div>
+      <div class="q"><span class="n">Q5</span><div>AI 操作による検証の環境：ブラウザ操作やアプリ起動をどこで行うか（ローカル、コンテナ、CI）</div></div>
+      <div class="q"><span class="n">Q6</span><div>Brief と判断依頼の言語：日本語固定か、<code>rules.md</code> で選択か</div></div>
+      <p class="note" style="margin-top:12px">決着済み：フックのランタイム（node、縮退モードなし）／L 階層の PR は人が Brief をスキムしてマージ／未回答の判断依頼は既定案で進めて Brief に明記。</p>
     </div>
     <div class="card">
       <h3>進め方</h3>
       <ol style="margin-bottom:0">
-        <li>未決事項 Q1〜Q8 を決める（Q1・Q3・Q4 が設計の前提になる）</li>
+        <li>未決事項 Q1〜Q6 を決める（Q1 が設計の前提になる。残りは設計中に既定を置いて進められる）</li>
         <li>設計レベルへ落とし込む：Skill の構成、成果物テンプレート、監査イベント台帳と JSONL スキーマ、フック一覧と予算、知識レイヤーの形式、判断依頼カードの書式、Brief の書式、分割の提案手順、移行の手順</li>
         <li>Claude Code 向けプロトタイプ：<code>SKILL.md</code>、3エージェント、node フック、Review Brief と判断依頼のテンプレート</li>
         <li>評価スイートで v2 と比較し、監査ログから人の時間と待ち時間を集計して「判断はモデル、機械的処理はフック」の分担が成り立つか確かめる</li>
@@ -1192,7 +1193,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   </div>
 </section>
 
-<footer>AI-DLC Workflows v3 決定記録 rev 3 · 2026-09-26 · 設計前の合意事項。数値は本リポジトリの 2.7.0 時点の実測。</footer>
+<footer>AI-DLC Workflows v3 決定記録 rev 3 · 2026-09-27 · 設計前の合意事項。数値は本リポジトリの 2.7.0 時点の実測。</footer>
 </div>
 </body>
 </html>
