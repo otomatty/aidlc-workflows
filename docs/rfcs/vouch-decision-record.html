@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AI-DLC v3 決定記録</title>
+<title>Vouch 決定記録</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -162,8 +162,8 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
 <header class="top">
   <div class="eyebrow">Decision record · draft · rev 3</div>
-  <h1>AI-DLC Workflows v3 — ここまでに決まったこと</h1>
-  <p class="lede">v2.10.0 から v3.0.0 へ。最小限のハーネスとステージで構成し、判断は強いモデルに任せ、機械的にできることはフックに任せ、品質を「証拠と参照元」で保証し、人はコードではなく「主張と証拠」を読む。人の関与は Intent 承認と PR 承認の2回に絞り、作業単位の分割でレビューを最小にする。この文書は設計前の合意事項をまとめたもので、設計の詳細はまだ決めていない。</p>
+  <h1>Vouch — ここまでに決まったこと</h1>
+  <p class="lede">AI-DLC v2.10.0（以下 v2）の後継として、新しいワークフロー Vouch を作る。最小限のハーネスとステージで構成し、判断は強いモデルに任せ、機械的にできることはフックに任せ、品質を「証拠と参照元」で保証し、人はコードではなく「主張と証拠」を読む。人の関与は Intent 承認と PR 承認の2回に絞り、作業単位の分割でレビューを最小にする。この文書は設計前の合意事項をまとめたもので、設計の詳細はまだ決めていない。</p>
   <div class="meta">
     <span>更新 <b>2026-09-27</b></span>
     <span>対象モデル <b>Opus 5.5</b></span>
@@ -172,11 +172,11 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
     <span>状態 <span class="pill accent">要件整理まで完了</span></span>
   </div>
   <div class="revlog">
-    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する／9/27 に未決事項 Q1〜Q6 がすべて決着（§18）。</p>
+    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する／9/27 に未決事項 Q1〜Q6 がすべて決着（§18）／9/27 に名称を <b>Vouch</b> に改めた。AI-DLC の第3版ではなく、別の新しいワークフローとして作る（§2）。</p>
     <p><b>rev 2</b>（<span class="pill rev">改訂</span>）：監査ログの踏襲／フックの活用／知識の鮮度と参照元／根本解決の最小実装／契約先行／モブ・エラボレーションの統合と確認点／質問数の無制限／脇質問と再開。</p>
   </div>
   <nav class="toc" aria-label="目次">
-    <a href="#s1"><span class="n">1</span>なぜ v3 か</a>
+    <a href="#s1"><span class="n">1</span>なぜ Vouch か</a>
     <a href="#s2"><span class="n">2</span>決まった前提</a>
     <a href="#s3"><span class="n">3</span>3つの転換</a>
     <a href="#s4"><span class="n">4</span>原則と禁止リスト</a>
@@ -199,10 +199,10 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
 <!-- 1 -->
 <section id="s1">
-  <div class="sec-head"><span class="n">01</span><h2>なぜ v3 か</h2></div>
+  <div class="sec-head"><span class="n">01</span><h2>なぜ Vouch か</h2></div>
   <div class="prose">
     <p>v2 は「モデルがステップを飛ばすたびに、機械的な強制（フック・レシート・ガード）を足す」方針で成長した。その結果、エンジンと配布物が肥大化し、AI 駆動開発そのものが重くなった。一方で README 自身が Opus 4.8 を推奨しており、強いモデル前提の設計なのに弱いモデル対策のコストを全員が払っている。</p>
-    <p>v3 は「判断はモデル、機械的処理はフック」と役割を分け、v2 の TypeScript エンジン（ルーティング・状態機械）を持たない。フックと監査ログの仕組みは踏襲するが、判断を代行させない。</p>
+    <p>Vouch は「判断はモデル、機械的処理はフック」と役割を分け、v2 の TypeScript エンジン（ルーティング・状態機械）を持たない。フックと監査ログの仕組みは踏襲するが、判断を代行させない。</p>
   </div>
   <div class="stats">
     <div class="stat"><div class="v">10.5万行</div><div class="l">エンジンの TypeScript（core/tools + hooks）</div></div>
@@ -216,7 +216,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
   <figure>
     <div class="fig-scroll">
-    <svg viewBox="0 0 940 290" role="img" aria-label="v2 ではエンジンとフックがモデルを制御し bun が必須だが、v3 ではモデルと Skill が判断し、フックが検査と記録を担い、成果物と監査ログを Git にコミットする">
+    <svg viewBox="0 0 940 290" role="img" aria-label="v2 ではエンジンとフックがモデルを制御し bun が必須だが、Vouch ではモデルと Skill が判断し、フックが検査と記録を担い、成果物と監査ログを Git にコミットする">
       <defs>
         <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -250,7 +250,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
         <line x1="480" y1="20" x2="480" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="2 4" opacity=".5"/>
 
-        <text x="520" y="24" font-size="13" font-weight="700">v3 — モデルが判断し、フックが検査・記録する</text>
+        <text x="520" y="24" font-size="13" font-weight="700">Vouch — モデルが判断し、フックが検査・記録する</text>
         <rect x="520" y="44" width="180" height="46" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
         <text x="610" y="63" text-anchor="middle" font-weight="500">Model + Skills</text>
         <text x="610" y="80" text-anchor="middle" font-size="11" opacity=".75">判断・生成（Markdown）</text>
@@ -280,7 +280,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       </g>
     </svg>
     </div>
-    <figcaption>図1. v2 はエンジンがモデルを挟んで制御し、判断まで代行する。v3 はモデルが判断し、フックは検査・記録・遮断だけを行い、成果物と監査ログを Git にコミットすることが証跡になる。</figcaption>
+    <figcaption>図1. v2 はエンジンがモデルを挟んで制御し、判断まで代行する。Vouch はモデルが判断し、フックは検査・記録・遮断だけを行い、成果物と監査ログを Git にコミットすることが証跡になる。</figcaption>
   </figure>
 </section>
 
@@ -293,6 +293,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">対象モデル</td><td>Opus 5.5</td><td>手順を強制せず、モデルの判断を信頼する設計にできる</td></tr>
       <tr><td class="k">ハーネス</td><td>Claude Code、Codex の2つ</td><td>7ハーネス展開をやめる。ハーネス横断レビューができる</td></tr>
       <tr><td class="k">対象範囲</td><td>開発チーム特化。Ideation と Operation は含めない</td><td>要件 → 設計 → 構築 → 検証 の4ステージに絞る</td></tr>
+      <tr><td class="k">名称 <span class="pill rev3">rev 3</span></td><td><b>Vouch</b>。AI-DLC v2 の後継だが、第3版ではなく別の新しいワークフロー</td><td>「AI が自分の仕事に証拠で保証（vouch）し、人は判断だけをする」。コマンドは <code>/vouch</code>、作業ディレクトリは <code>vouch/</code>、フックは <code>vouch-*.mjs</code>。バージョンは 0.1.0 から始め、GA で 1.0.0。リポジトリは新規 <code>vouch-workflows</code> を既定とし、この文書群は当面 <code>aidlc-workflows/docs/rfcs/</code> に置く</td></tr>
       <tr><td class="k">ランタイム <span class="pill rev3">rev 3</span></td><td>フックは node で書く。縮退モードは実装しない</td><td>利用者側の実行時依存は git ＋ node。フックは依存ゼロの plain JavaScript（ESM）でビルド不要。v2 の 10.5 万行エンジン・状態機械・ルーティングは持たない</td></tr>
       <tr><td class="k">監査ログ <span class="pill rev3">rev 3</span></td><td>v2 の仕組みを踏襲し、目的を「後で分析するための計測データ」と定める</td><td>各イベントの所要時間・待ち時間・回数・トークンなど取得できるデータを構造化（JSONL）で記録する。フックだけが書く（§11）</td></tr>
       <tr><td class="k">フック</td><td>機械的に処理できることは積極的にフックに任せる</td><td>検査・記録・遮断はフック、判断はモデル。判断を代行させない（§11）</td></tr>
@@ -302,7 +303,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">知識と参照元</td><td>既存コード・設計・インフラ・背景・規約を常に最新に保ち、成果物に参照元を必ず載せる</td><td>鮮度チェックと引用検査はフック、再走査は explorer（§12）</td></tr>
       <tr><td class="k">実装の姿勢</td><td>理想の設計・ユースケースの漏れ・リファクタ候補を常に意識し、根本解決の必要最小限の実装をする</td><td>Intent と Design に「理想形との差分」を必ず含める（§13）</td></tr>
       <tr><td class="k">実装前の固め</td><td>TDD に加えて、型定義・データ定義・静的解析を実装前にチェックする</td><td>契約 → テスト → 実装 の順をコミット順で証明し、フックが検査する（§11）</td></tr>
-      <tr><td class="k">v2 互換</td><td>record を v3 へ移行する</td><td>移行も Skill（<code>/aidlc migrate</code>）。監査ログも移行する。元の record は保存する</td></tr>
+      <tr><td class="k">v2 互換</td><td>record を Vouch へ移行する</td><td>移行も Skill（<code>/vouch migrate</code>）。監査ログも移行する。元の record は保存する</td></tr>
       <tr><td class="k">品質の考え方</td><td>テストだけでは不十分。多層の証拠で担保する</td><td>§7 の品質モデル</td></tr>
       <tr><td class="k">儀式</td><td>モブ・エラボレーションは Intent ＋ Design で1つにまとめ、確認点ごとに人が確認する。モブ・レビューは継続</td><td>確認点の粒度は設定できる（§5）</td></tr>
       <tr><td class="k">レビューの質問</td><td>数を制限しない。必要な質問はすべて行う</td><td>優先度順に並べ、記録にある答えは再質問しない（§14）</td></tr>
@@ -313,7 +314,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   </table></div>
   <div class="resolved">
     <h3>解決済み：ツール依存とフックの両立 <span class="pill rev3">rev 3</span></h3>
-    <p>rev 2 で衝突していた「ツール依存なし」と「フックを活用」は、利用者側の実行時依存を <b>git ＋ node</b> に限定することで解決した。フックは依存ゼロの plain JavaScript で、パッケージのインストールもビルドも要らない。縮退モードは実装せず、node が無い環境は対象外とする（<code>/aidlc status</code> と <code>/aidlc doctor</code> が node の有無を検査する）。</p>
+    <p>rev 2 で衝突していた「ツール依存なし」と「フックを活用」は、利用者側の実行時依存を <b>git ＋ node</b> に限定することで解決した。フックは依存ゼロの plain JavaScript で、パッケージのインストールもビルドも要らない。縮退モードは実装せず、node が無い環境は対象外とする（<code>/vouch status</code> と <code>/vouch doctor</code> が node の有無を検査する）。</p>
   </div>
 </section>
 
@@ -450,7 +451,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         <line x1="840" y1="170" x2="840" y2="270" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>
 
         <rect x="60" y="324" width="930" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>
-        <text x="525" y="342" text-anchor="middle" font-size="10.5">いつでも：<tspan font-family="IBM Plex Mono, monospace">/aidlc ask</tspan>（既存コンテキストに影響しない脇質問） · <tspan font-family="IBM Plex Mono, monospace">/aidlc</tspan>（中断からの再開。状態は成果物と監査ログから導出）</text>
+        <text x="525" y="342" text-anchor="middle" font-size="10.5">いつでも：<tspan font-family="IBM Plex Mono, monospace">/vouch ask</tspan>（既存コンテキストに影響しない脇質問） · <tspan font-family="IBM Plex Mono, monospace">/vouch</tspan>（中断からの再開。状態は成果物と監査ログから導出）</text>
       </g>
     </svg>
     </div>
@@ -479,8 +480,8 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
   <h3>いつでもできること</h3>
   <div class="grid2">
-    <div class="card"><div class="tag">/aidlc ask "&lt;質問&gt;"</div><h3>脇質問</h3><p>ワークフロー中に気になったことを、進行中のコンテキストに影響を与えずに聞ける。別コンテキスト（サブエージェント）が intent フォルダと知識レイヤーを読み取り専用で参照して答える。状態は変えない。質問と答えは監査ログに残るので、後で同じことを聞かれない。</p></div>
-    <div class="card"><div class="tag">/aidlc</div><h3>再開</h3><p>中断（セッション終了、コンテキスト圧縮、クラッシュ、意図的な停止）の後、引数なしの <code>/aidlc</code> でいつでも再開できる。現在地は成果物の frontmatter と監査ログの末尾から導出し、セッション開始フックが再開用の要約を渡す。<code>/aidlc status</code> で現在地・確認点・未回答の判断依頼を見る。</p></div>
+    <div class="card"><div class="tag">/vouch ask "&lt;質問&gt;"</div><h3>脇質問</h3><p>ワークフロー中に気になったことを、進行中のコンテキストに影響を与えずに聞ける。別コンテキスト（サブエージェント）が intent フォルダと知識レイヤーを読み取り専用で参照して答える。状態は変えない。質問と答えは監査ログに残るので、後で同じことを聞かれない。</p></div>
+    <div class="card"><div class="tag">/vouch</div><h3>再開</h3><p>中断（セッション終了、コンテキスト圧縮、クラッシュ、意図的な停止）の後、引数なしの <code>/vouch</code> でいつでも再開できる。現在地は成果物の frontmatter と監査ログの末尾から導出し、セッション開始フックが再開用の要約を渡す。<code>/vouch status</code> で現在地・確認点・未回答の判断依頼を見る。</p></div>
   </div>
 </section>
 
@@ -836,7 +837,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="prose"><p>Intent ごとにブランチを切り、ゲートはコミット、承認は PR。状態は成果物の frontmatter から導出し、出来事とその計測値は監査ログに残す。契約 → テスト → 実装 の順序はコミット履歴が証明し、フックが検査する。</p></div>
   <figure>
     <div class="fig-scroll">
-    <svg viewBox="0 0 960 220" role="img" aria-label="aidlc ブランチ上のコミット列。intent 承認、design 承認、型とデータ定義の契約コミット、失敗するテストのコミット、通る実装のコミット、リファクタ、review.md、そして人による PR マージで main に戻る">
+    <svg viewBox="0 0 960 220" role="img" aria-label="vouch ブランチ上のコミット列。intent 承認、design 承認、型とデータ定義の契約コミット、失敗するテストのコミット、通る実装のコミット、リファクタ、review.md、そして人による PR マージで main に戻る">
       <defs>
         <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -848,7 +849,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         <path d="M80,50 C110,50 110,130 140,130" fill="none" stroke="var(--accent)" stroke-width="2"/>
         <line x1="140" y1="130" x2="810" y2="130" stroke="var(--accent)" stroke-width="2"/>
         <path d="M810,130 C860,130 860,50 900,50" fill="none" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar5)"/>
-        <text x="140" y="118" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--accent)">aidlc/260920-orders</text>
+        <text x="140" y="118" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--accent)">vouch/260920-orders</text>
         <g>
           <polygon points="170,121 179,130 170,139 161,130" fill="var(--human)"/>
           <text x="170" y="156" text-anchor="middle">intent approved</text>
@@ -876,7 +877,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         </g>
         <path d="M340,100 L340,92 L580,92 L580,100" fill="none" stroke="currentColor" stroke-width="1"/>
         <text x="460" y="84" text-anchor="middle" font-size="10">契約 → テスト → 実装 の順をコミット順で証明（フックが検査）</text>
-        <text x="20" y="210" font-size="11" opacity=".8">状態ファイルなし。<tspan font-family="IBM Plex Mono, monospace">/aidlc</tspan> は成果物の frontmatter と監査ログを読んで再開する。監査ログは append-only でフックだけが書く。</text>
+        <text x="20" y="210" font-size="11" opacity=".8">状態ファイルなし。<tspan font-family="IBM Plex Mono, monospace">/vouch</tspan> は成果物の frontmatter と監査ログを読んで再開する。監査ログは append-only でフックだけが書く。</text>
       </g>
     </svg>
     </div>
@@ -916,7 +917,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
  "ts":"2026-09-26T13:02:44Z","question":"Q-3","choice":"A","wait_ms":10000000,"parent":"evt_0043","v":1}
 {"id":"evt_0052","type":"hook.check","intent":"260920-orders","unit":"U1","actor":"hook","check":"contract",
  "ts":"2026-09-26T10:20:31Z","duration_ms":4100,"result":"pass","v":1}</code></pre>
-  <p class="note">分析は <code>/aidlc report</code>（Skill。モデルが JSONL を読んで要約する）と、JSONL をそのまま jq・DuckDB・表計算で扱う方法の両方を想定する。分析用のダッシュボードは v3 の範囲外。</p>
+  <p class="note">分析は <code>/vouch report</code>（Skill。モデルが JSONL を読んで要約する）と、JSONL をそのまま jq・DuckDB・表計算で扱う方法の両方を想定する。分析用のダッシュボードは Vouch の範囲外。</p>
 
   <h3>フックが担う機械的処理</h3>
   <div class="prose"><p>境界は一つ：<b>フックは判断しない。検査・記録・遮断だけを行い、判断が要る結果はモデルへ返す。</b>フックは node で書く依存ゼロの plain JavaScript（ESM）で、ビルドもインストールも要らない。v2 が判断まで代行させて膨らんだ反省から、フックの総量にも行数の予算を置く。</p></div>
@@ -1094,16 +1095,16 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 <div class="tree">&lt;project&gt;/
 ├─ AGENTS.md                         <span class="c"># 約60行。原則、4ステージ、不変条件、禁止リスト（両ハーネス共通）</span>
 ├─ CLAUDE.md                         <span class="c"># 1行: @AGENTS.md</span>
-├─ .claude/skills/aidlc/SKILL.md     <span class="c"># オーケストレータ（150行以下）。/aidlc, ask, status, report, migrate, doctor</span>
-├─ .claude/skills/aidlc-{intent,design,build,verify}/SKILL.md
-├─ .claude/skills/aidlc-kb-{testing,security,api-design,...}/   <span class="c"># 必要時のみ読む知識</span>
-├─ .claude/agents/aidlc-{builder,reviewer,explorer}.md
-├─ .claude/hooks/aidlc-*.mjs          <span class="c"># node、依存ゼロの plain JavaScript。機械的処理のみ。行数の予算あり</span>
+├─ .claude/skills/vouch/SKILL.md     <span class="c"># オーケストレータ（150行以下）。/vouch, ask, status, report, migrate, doctor</span>
+├─ .claude/skills/vouch-{intent,design,build,verify}/SKILL.md
+├─ .claude/skills/vouch-kb-{testing,security,api-design,...}/   <span class="c"># 必要時のみ読む知識</span>
+├─ .claude/agents/vouch-{builder,reviewer,explorer}.md
+├─ .claude/hooks/vouch-*.mjs          <span class="c"># node、依存ゼロの plain JavaScript。機械的処理のみ。行数の予算あり</span>
 ├─ .agents/skills/ …  .codex/agents/*.toml  .codex/hooks/     <span class="c"># Codex 版（内容は同一）</span>
-└─ aidlc/
+└─ vouch/
    ├─ rules.md                       <span class="c"># DoD ＋ 禁止リスト ＋ 依存ルール ＋ 確認点の粒度 ＋ Corrections</span>
    ├─ knowledge/                     <span class="c"># 知識レイヤー：codekb/&lt;repo&gt;/、design/、infra/、background.md（世代つき）</span>
-   ├─ archive/v2/                    <span class="c"># 移行元の v2 record（読み取り専用）</span>
+   ├─ archive/aidlc-v2/                    <span class="c"># 移行元の v2 record（読み取り専用）</span>
    └─ intents/&lt;YYMMDD-slug&gt;/
       ├─ intent.md  design.md  build-log.md  review.md  decisions.md
       └─ audit/events.jsonl          <span class="c"># 監査ログ（append-only、フックだけが書く、計測値つき）</span></div>
@@ -1113,11 +1114,11 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">ルールの共有</td><td><code>AGENTS.md</code>（<code>CLAUDE.md</code> から参照）</td><td><code>AGENTS.md</code></td></tr>
       <tr><td class="k">Skill</td><td><code>.claude/skills/</code></td><td><code>.agents/skills/</code></td></tr>
       <tr><td class="k">エージェント</td><td><code>.claude/agents/*.md</code></td><td><code>.codex/agents/*.toml</code>（<code>max_depth = 1</code>）</td></tr>
-      <tr><td class="k">フック</td><td><code>settings.json</code> の hooks（SessionStart / PreToolUse / PostToolUse / Stop）→ <code>node .claude/hooks/aidlc-*.mjs</code></td><td><code>.codex/hooks/</code> → 同じスクリプト</td></tr>
+      <tr><td class="k">フック</td><td><code>settings.json</code> の hooks（SessionStart / PreToolUse / PostToolUse / Stop）→ <code>node .claude/hooks/vouch-*.mjs</code></td><td><code>.codex/hooks/</code> → 同じスクリプト</td></tr>
       <tr><td class="k">構造化質問</td><td><code>AskUserQuestion</code></td><td><code>request_user_input</code></td></tr>
       <tr><td class="k">脇質問</td><td>読み取り専用のサブエージェント</td><td>読み取り専用のエージェント</td></tr>
       <tr><td class="k">並列 Build</td><td>Agent の worktree 分離</td><td><code>git worktree</code> ＋ エージェント</td></tr>
-      <tr><td class="k">状態</td><td colspan="2"><code>aidlc/intents/&lt;slug&gt;/</code> の frontmatter <code>status:</code> と監査ログの末尾から導出</td></tr>
+      <tr><td class="k">状態</td><td colspan="2"><code>vouch/intents/&lt;slug&gt;/</code> の frontmatter <code>status:</code> と監査ログの末尾から導出</td></tr>
       <tr><td class="k">計測値の取得</td><td>フックの入力とトランスクリプトから使用量を取れる</td><td>取れる範囲で記録し、取れない項目は省略</td></tr>
     </tbody>
   </table></div>
@@ -1126,9 +1127,9 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 <!-- 16 -->
 <section id="s16">
   <div class="sec-head"><span class="n">16</span><h2>v2 record からの移行</h2></div>
-  <div class="prose"><p>移行は Skill（<code>/aidlc migrate</code>）。モデルが v2 record を読み、v3 の intent フォルダを生成し、移行レポートを Review Brief の形式で出して人が承認する。「元ファイル → 行き先」の全件表を載せ、行き先のないファイルを明示する。元の record は <code>aidlc/archive/v2/</code> に残す。</p></div>
+  <div class="prose"><p>移行は Skill（<code>/vouch migrate</code>）。モデルが v2 record を読み、Vouch の intent フォルダを生成し、移行レポートを Review Brief の形式で出して人が承認する。「元ファイル → 行き先」の全件表を載せ、行き先のないファイルを明示する。元の record は <code>vouch/archive/aidlc-v2/</code> に残す。</p></div>
   <div class="tbl"><table>
-    <thead><tr><th>v2 の成果物</th><th></th><th>v3 の行き先</th></tr></thead>
+    <thead><tr><th>v2 の成果物</th><th></th><th>Vouch の行き先</th></tr></thead>
     <tbody>
       <tr><td><code>aidlc-state.md</code> のチェックボックス</td><td>→</td><td>各成果物の <code>status:</code>。Intent / Design / Build / Verify のどこまで済んだか</td></tr>
       <tr><td><code>ideation/*</code>（intent-statement、scope-document …）</td><td>→</td><td><code>intent.md</code> § 背景（付録）と <code>knowledge/background.md</code></td></tr>
@@ -1136,10 +1137,10 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td>domain-design、contract-design、units-generation、bolt-plan</td><td>→</td><td><code>design.md</code> ＋ <code>intent.md</code> の実行計画（Unit とリスク階層）。契約は <code>knowledge/design/</code> にも</td></tr>
       <tr><td><code>construction/&lt;unit&gt;/</code> の functional / nfr / infra design</td><td>→</td><td><code>design.md</code> § Unit 別付録。インフラは <code>knowledge/infra/</code> にも</td></tr>
       <tr><td>code-generation の <code>## Review</code> 付録</td><td>→</td><td><code>review.md</code>（履歴として）</td></tr>
-      <tr><td><code>audit/*.md</code>（シャード、91 種）</td><td>→</td><td><code>audit/events.jsonl</code> に v3 の台帳へ変換して引き継ぐ。時刻は保持し、所要時間は隣接イベントから推定して <code>estimated: true</code> を付ける。人の決定は <code>decisions.md</code> にも抽出 <span class="pill rev3">rev 3</span></td></tr>
+      <tr><td><code>audit/*.md</code>（シャード、91 種）</td><td>→</td><td><code>audit/events.jsonl</code> に Vouch の台帳へ変換して引き継ぐ。時刻は保持し、所要時間は隣接イベントから推定して <code>estimated: true</code> を付ける。人の決定は <code>decisions.md</code> にも抽出 <span class="pill rev3">rev 3</span></td></tr>
       <tr><td><code>memory/{org,team,project}.md</code>、<code>phases/*.md</code></td><td>→</td><td><code>rules.md</code> に統合。チームが affirm していない org 既定は落とす</td></tr>
       <tr><td><code>codekb/&lt;repo&gt;/</code></td><td>→</td><td><code>knowledge/codekb/&lt;repo&gt;/</code> に世代を付けて。移行直後に鮮度チェックが走る</td></tr>
-      <tr><td><code>operation/*</code></td><td>→</td><td><code>archive/v2/</code> にのみ残す</td></tr>
+      <tr><td><code>operation/*</code></td><td>→</td><td><code>archive/aidlc-v2/</code> にのみ残す</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -1148,7 +1149,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 <section id="s17">
   <div class="sec-head"><span class="n">17</span><h2>成功指標</h2><span class="pill rev3">rev 3</span></div>
   <div class="tbl"><table>
-    <thead><tr><th>指標</th><th>v2</th><th>v3 目標</th><th>測り方</th></tr></thead>
+    <thead><tr><th>指標</th><th>v2</th><th>Vouch 目標</th><th>測り方</th></tr></thead>
     <tbody>
       <tr><td class="k">常時読み込むコンテキスト</td><td class="num">約4万トークン</td><td class="num">8千トークン未満</td><td>Skill と AGENTS.md の実測</td></tr>
       <tr><td class="k">ステージ / エージェント / ハーネス</td><td class="num">33 / 14 / 7</td><td class="num">4 / 3 / 2</td><td>—</td></tr>
@@ -1164,13 +1165,13 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">知識レイヤーが古いまま書かれた成果物</td><td>—</td><td class="num">0</td><td>鮮度チェック</td></tr>
     </tbody>
   </table></div>
-  <p class="note">評価スイート：同じ代表タスク（bugfix、feature、greenfield、brownfield）を v2 / v3 で走らせ、監査ログから上の指標を集計する。加えて「Brief だけを読んだ人が正しく承認 / 却下できた率」「判断依頼のカードだけで人が決められた率」「reviewer がその場しのぎを検出した率」を測る。</p>
+  <p class="note">評価スイート：同じ代表タスク（bugfix、feature、greenfield、brownfield）を v2 / Vouch で走らせ、監査ログから上の指標を集計する。加えて「Brief だけを読んだ人が正しく承認 / 却下できた率」「判断依頼のカードだけで人が決められた率」「reviewer がその場しのぎを検出した率」を測る。</p>
 </section>
 
 <!-- 18 -->
 <section id="s18">
   <div class="sec-head"><span class="n">18</span><h2>決着した既定と次のステップ</h2><span class="pill rev3">rev 3</span></div>
-  <div class="prose"><p>未決事項はすべて決着した（2026-09-27、Q1〜Q6 は推奨 A を採用）。各項目の選択肢・根拠・具体案は <a href="v3-open-questions.html">v3-open-questions.html</a> にある。ここでは決まった内容だけを記す。</p></div>
+  <div class="prose"><p>未決事項はすべて決着した（2026-09-27、Q1〜Q6 は推奨 A を採用）。各項目の選択肢・根拠・具体案は <a href="vouch-open-questions.html">vouch-open-questions.html</a> にある。ここでは決まった内容だけを記す。</p></div>
   <div class="tbl"><table>
     <thead><tr><th>論点</th><th>決定</th><th>反映先</th></tr></thead>
     <tbody>
@@ -1191,12 +1192,12 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <li>設計レベルへ落とし込む：Skill の構成、成果物テンプレート（ja / en）、監査イベント台帳と JSONL スキーマ、フック一覧と予算、知識レイヤーの形式、判断依頼カードの書式、Brief の書式、分割の提案手順、移行の手順</li>
       <li>Claude Code 向けプロトタイプ：<code>SKILL.md</code>、3エージェント、node フック、Review Brief と判断依頼のテンプレート</li>
       <li>評価スイートで v2 と比較し、監査ログから人の時間と待ち時間を集計して「判断はモデル、機械的処理はフック」の分担が成り立つか確かめる</li>
-      <li>Codex へ展開し、移行 Skill を整備して v3.0.0</li>
+      <li>Codex へ展開し、移行 Skill を整備して Vouch 1.0.0</li>
     </ol>
   </div>
 </section>
 
-<footer>AI-DLC Workflows v3 決定記録 rev 3 · 2026-09-27 · 設計前の合意事項。数値は本リポジトリの 2.7.0 時点の実測。</footer>
+<footer>Vouch 決定記録 rev 3 · 2026-09-27 · 設計前の合意事項。数値は本リポジトリの 2.7.0 時点の実測。</footer>
 </div>
 </body>
 </html>

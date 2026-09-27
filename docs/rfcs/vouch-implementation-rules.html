@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AI-DLC v3 実装ルール</title>
+<title>Vouch 実装ルール</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -117,11 +117,11 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
 <header class="top">
   <div class="eyebrow">Implementation rules · draft</div>
-  <h1>AI-DLC v3 実装ルール — 構造・Lint・テスト</h1>
-  <p class="lede">v3 をこのリポジトリで実装するための、コードの構造、機械で強制できる実装ルール、厳格なテストのルール。判断でしか守れないルールは「reviewer」と明記し、それ以外はすべて Lint・型検査・テスト・CI 予算のどれかで落ちるようにする。ルールには ID を付け、違反時の出力に ID を出す。</p>
+  <h1>Vouch 実装ルール — 構造・Lint・テスト</h1>
+  <p class="lede">Vouch をこのリポジトリで実装するための、コードの構造、機械で強制できる実装ルール、厳格なテストのルール。判断でしか守れないルールは「reviewer」と明記し、それ以外はすべて Lint・型検査・テスト・CI 予算のどれかで落ちるようにする。ルールには ID を付け、違反時の出力に ID を出す。</p>
   <div class="meta">
     <span>更新 <b>2026-09-27</b></span>
-    <span>前提 <b>決定記録 rev 3</b></span>
+    <span>前提 <b>Vouch 決定記録 rev 3</b></span>
     <span>実行時 <b>node ≥ 22、依存ゼロ</b></span>
     <span>開発時 <b>npm、Biome、tsc、dependency-cruiser、markdownlint、knip</b></span>
   </div>
@@ -141,10 +141,10 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 <section id="s1">
   <div class="sec-head"><span class="n">01</span><h2>方針</h2></div>
   <div class="prose">
-    <div class="principle"><b>ルールは機械で守る。守れないルールは「判断」と明記する。</b>この文書の各ルールは「強制手段」の列を持つ。手段は Biome / tsc / depcruise / markdownlint / knip / 構造テスト / CI 予算 / reviewer のいずれか。reviewer 以外は CI が落とす。reviewer は v3 の reviewer エージェントと人の観点表に載せる。</div>
+    <div class="principle"><b>ルールは機械で守る。守れないルールは「判断」と明記する。</b>この文書の各ルールは「強制手段」の列を持つ。手段は Biome / tsc / depcruise / markdownlint / knip / 構造テスト / CI 予算 / reviewer のいずれか。reviewer 以外は CI が落とす。reviewer は Vouch の reviewer エージェントと人の観点表に載せる。</div>
     <div class="principle"><b>実行時は依存ゼロ、開発時は使えるものを使う。</b>利用者に配るフックは node の組み込みモジュールだけで動く plain JavaScript。このリポジトリの開発ツール（Biome、TypeScript の型検査、dependency-cruiser、markdownlint、knip、Stryker）は devDependencies に置き、配布物には含めない。</div>
     <div class="principle"><b>テストは契約を検証する。実装の写しを書かない。</b>フックは子プロセスとして起動し、stdin / stdout / 終了コード / ファイルへの副作用だけを検証する。ライブラリは純粋関数として直接検証する。Skill と成果物テンプレートは構造テストで検証する。モデルの振る舞いは評価スイート（CI 外）で検証する。</div>
-    <div class="principle"><b>v3 の運用ルールは、このリポジトリ自身にも適用する。</b>契約 → テスト → 実装のコミット順、主張には証拠、Review Brief で PR を出す。v3 の最初の利用者はこのリポジトリ。</div>
+    <div class="principle"><b>Vouch の運用ルールは、このリポジトリ自身にも適用する。</b>契約 → テスト → 実装のコミット順、主張には証拠、Review Brief で PR を出す。Vouch の最初の利用者はこのリポジトリ。</div>
   </div>
 </section>
 
@@ -161,16 +161,16 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 │  │  ├─ env.mjs                 <span class="c"># process.env を読む唯一の場所</span>
 │  │  ├─ clock.mjs               <span class="c"># now() / id()。テストで差し替える</span>
 │  │  ├─ frontmatter.mjs  git.mjs  citation.mjs  contract.mjs  dod.mjs  freshness.mjs  ...
-│  └─ aidlc-&lt;verb&gt;-&lt;object&gt;.mjs  <span class="c"># 1フック1ファイル。lib を呼ぶだけの薄い層（≤150行）</span>
+│  └─ vouch-&lt;verb&gt;-&lt;object&gt;.mjs  <span class="c"># 1フック1ファイル。lib を呼ぶだけの薄い層（≤150行）</span>
 ├─ skills/                       <span class="c"># Markdown。{{HARNESS_DIR}} トークンでハーネス非依存</span>
-│  ├─ aidlc/SKILL.md             <span class="c"># オーケストレータ（≤150行）</span>
-│  ├─ aidlc-intent/  aidlc-design/  aidlc-build/  aidlc-verify/  aidlc-migrate/
-│  └─ aidlc-kb-*/                <span class="c"># 必要時のみ読む知識</span>
+│  ├─ vouch/SKILL.md             <span class="c"># オーケストレータ（≤150行）</span>
+│  ├─ vouch-intent/  vouch-design/  vouch-build/  vouch-verify/  vouch-migrate/
+│  └─ vouch-kb-*/                <span class="c"># 必要時のみ読む知識</span>
 ├─ agents/                       <span class="c"># builder / reviewer / explorer（Markdown ＋ frontmatter）</span>
 ├─ templates/{ja,en}/            <span class="c"># intent / design / build-log / review / decisions / rules / 判断依頼</span>
 ├─ registry/                     <span class="c"># 単一の正典。Markdown 内の数値・一覧はここから検証する</span>
 │  ├─ audit-events.json          <span class="c"># 台帳 ＋ JSON Schema（Q1）</span>
-│  ├─ audit-migration.json       <span class="c"># v2 の 91 名 → v3 名（未対応は legacy）</span>
+│  ├─ audit-migration.json       <span class="c"># v2 の 91 名 → Vouch 名（未対応は legacy）</span>
 │  ├─ quality-layers.json        <span class="c"># 層 × 階層（Q3）</span>
 │  ├─ diagrams.json              <span class="c"># 成果物ごとの必須図（Q4）</span>
 │  ├─ enforcement-map.json       <span class="c"># Skill 中の MUST/NEVER → 強制手段</span>
@@ -204,7 +204,7 @@ tests/
         <rect x="20" y="20" width="300" height="200" rx="6" fill="none" stroke="var(--hook)" stroke-width="1.4" stroke-dasharray="6 4"/>
         <text x="170" y="42" text-anchor="middle" font-weight="700" font-size="13" fill="var(--hook)">実行時（配布物）</text>
         <rect x="40" y="56" width="260" height="40" rx="4" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.4"/>
-        <text x="170" y="80" text-anchor="middle">hooks/aidlc-*.mjs（薄い層）</text>
+        <text x="170" y="80" text-anchor="middle">hooks/vouch-*.mjs（薄い層）</text>
         <rect x="40" y="116" width="260" height="40" rx="4" fill="var(--hook-soft)" stroke="var(--hook)" stroke-width="1.4"/>
         <text x="170" y="140" text-anchor="middle">hooks/lib/*.mjs（純粋関数）</text>
         <rect x="40" y="176" width="260" height="32" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="1"/>
@@ -272,7 +272,7 @@ tests/
       <tr><td class="k">Markdown</td><td>markdownlint-cli2（<code>.markdownlint-cli2.jsonc</code>）</td><td>Skill / テンプレート / AGENTS.md の見出し階層、コードフェンスの言語指定、行末空白を落とせる</td><td>新規</td></tr>
       <tr><td class="k">未使用検出</td><td>knip（既存 6）</td><td>使われない lib、export、devDependency を落とす</td><td>継続。entry を .mjs に</td></tr>
       <tr><td class="k">テスト</td><td><code>node --test</code> ＋ <code>node:assert/strict</code>。フレームワークなし</td><td>依存ゼロ。カバレッジ閾値（<code>--test-coverage-lines</code> ほか）も組み込み</td><td>bun test を廃止</td></tr>
-      <tr><td class="k">ミューテーション</td><td>StrykerJS（夜間のみ）</td><td>「テストが本当に検証しているか」を lib に対して機械で測る。v3 の破壊検査の自動版</td><td>新規</td></tr>
+      <tr><td class="k">ミューテーション</td><td>StrykerJS（夜間のみ）</td><td>「テストが本当に検証しているか」を lib に対して機械で測る。Vouch の破壊検査の自動版</td><td>新規</td></tr>
       <tr><td class="k">JSON Schema</td><td>ajv（テストの devDependency）</td><td>レジストリと監査イベントの検証</td><td>新規</td></tr>
     </tbody>
   </table></div>
@@ -288,7 +288,7 @@ tests/
   <div class="tbl"><table>
     <thead><tr><th>ID</th><th>ルール</th><th>強制手段</th></tr></thead>
     <tbody>
-      <tr><td class="id">STR-1</td><td>1フック1ファイル。ファイル名は <code>aidlc-&lt;verb&gt;-&lt;object&gt;.mjs</code>（例 <code>aidlc-check-citation.mjs</code>、<code>aidlc-record-event.mjs</code>）。<code>lib/</code> 以外のサブディレクトリを作らない</td><td>構造テスト</td></tr>
+      <tr><td class="id">STR-1</td><td>1フック1ファイル。ファイル名は <code>vouch-&lt;verb&gt;-&lt;object&gt;.mjs</code>（例 <code>vouch-check-citation.mjs</code>、<code>vouch-record-event.mjs</code>）。<code>lib/</code> 以外のサブディレクトリを作らない</td><td>構造テスト</td></tr>
       <tr><td class="id">STR-2</td><td>依存の向き：hooks → lib のみ。lib → <code>node:</code> 組み込みと <code>registry/*.json</code> のみ。hooks 同士、lib → hooks、実行時 → tests、実行時 → npm、循環はすべて禁止</td><td>dependency-cruiser</td></tr>
       <tr><td class="id">STR-3</td><td><code>core/</code> にハーネス固有のパス（<code>.claude/</code>、<code>.codex/</code>、<code>.agents/</code>）を書かない。<code>{{HARNESS_DIR}}</code> トークンを使う</td><td>構造テスト（grep）</td></tr>
       <tr><td class="id">STR-4</td><td><code>dist/</code> は生成物。<code>core/</code> と <code>harness/</code> から <code>package.mjs</code> でバイト一致で再生成できる</td><td><code>package.mjs --check</code></td></tr>
@@ -324,7 +324,7 @@ tests/
     <tbody>
       <tr><td class="id">REG-1</td><td><code>audit-events.json</code> は JSON Schema（draft 2020-12）を持ち、各イベントに <code>fields</code>（必須 / 任意）、<code>measures</code>、<code>pairs_with</code>（開始 ↔ 完了）を定義する。台帳自体もスキーマで検証する</td><td>registry テスト（ajv）</td></tr>
       <tr><td class="id">REG-2</td><td>台帳のすべてのイベントに、<code>tests/fixtures/audit/&lt;type&gt;.jsonl</code> の fixture と、それを emit する契約テストがある。台帳に載っているのに誰も emit しないイベントは削除する</td><td>registry テスト（台帳 × fixture × テストの突き合わせ）</td></tr>
-      <tr><td class="id">REG-3</td><td><code>audit-migration.json</code> は v2 台帳の全 91 名をキーに持つ（v2 の <code>audit-format.md</code> を fixture として保存し、比較する）。値は v3 名か <code>legacy</code></td><td>registry テスト</td></tr>
+      <tr><td class="id">REG-3</td><td><code>audit-migration.json</code> は v2 台帳の全 91 名をキーに持つ（v2 の <code>audit-format.md</code> を fixture として保存し、比較する）。値は Vouch 名か <code>legacy</code></td><td>registry テスト</td></tr>
       <tr><td class="id">REG-4</td><td><code>enforcement-map.json</code>：Skill / AGENTS.md / テンプレートの中で <code>MUST</code>、<code>NEVER</code>、<code>必ず</code>、<code>禁止</code> を含む行は <code>[R-xxx]</code> タグを持ち、map に <code>hook | lint | test | reviewer | human</code> のどれかで登録されている。登録のない強制語は落ちる</td><td>content テスト</td></tr>
       <tr><td class="id">REG-5</td><td><code>budgets.json</code> が唯一の予算表。CI の予算検査はここだけを読む</td><td>CI 予算</td></tr>
     </tbody>
@@ -353,7 +353,7 @@ tests/
       <tr><td class="id">DIST-2</td><td><code>dist/</code> にテスト、fixture、golden、devDependency 由来のファイルを含まない</td><td>packaging テスト</td></tr>
       <tr><td class="id">DIST-3</td><td>Claude の <code>settings.json</code> と Codex の <code>hooks.json</code> が登録するフックは実在し、登録されていないフックは存在しない（両方向）</td><td>packaging テスト</td></tr>
       <tr><td class="id">DIST-4</td><td>Codex の TOML エージェントは Markdown エージェントから生成し、往復（TOML → Markdown）で元に戻る</td><td>packaging テスト</td></tr>
-      <tr><td class="id">DIST-5</td><td>配布物を空のプロジェクトにコピーし、<code>node .claude/hooks/aidlc-doctor.mjs</code> が exit 0 で通る（node と git 以外を要求しない）</td><td>scenario テスト</td></tr>
+      <tr><td class="id">DIST-5</td><td>配布物を空のプロジェクトにコピーし、<code>node .claude/hooks/vouch-doctor.mjs</code> が exit 0 で通る（node と git 以外を要求しない）</td><td>scenario テスト</td></tr>
     </tbody>
   </table></div>
 
@@ -379,7 +379,7 @@ tests/
     <thead><tr><th>階層</th><th>対象</th><th>検証の仕方</th><th>必須の網羅</th><th>CI</th></tr></thead>
     <tbody>
       <tr><td class="k">unit</td><td><code>hooks/lib/*.mjs</code></td><td>直接 import。純粋関数として入力 → 出力。I/O は <code>lib/fs.mjs</code> をテスト用実装に差し替える</td><td>lib と 1:1 対応のテストファイル。分岐 95%</td><td>毎 PR</td></tr>
-      <tr><td class="k">hooks</td><td><code>hooks/aidlc-*.mjs</code></td><td>子プロセスで起動し、stdin / stdout / stderr / 終了コード / sandbox 内のファイルと <code>events.jsonl</code> を検証</td><td>各フックに 5 ケース：許可、遮断、不正入力、冪等、時間予算</td><td>毎 PR</td></tr>
+      <tr><td class="k">hooks</td><td><code>hooks/vouch-*.mjs</code></td><td>子プロセスで起動し、stdin / stdout / stderr / 終了コード / sandbox 内のファイルと <code>events.jsonl</code> を検証</td><td>各フックに 5 ケース：許可、遮断、不正入力、冪等、時間予算</td><td>毎 PR</td></tr>
       <tr><td class="k">registry</td><td><code>registry/*.json</code></td><td>スキーマ検証、fixture との突き合わせ、v2 対応表の完全性</td><td>全イベントに fixture ＋ emit するテスト</td><td>毎 PR</td></tr>
       <tr><td class="k">content</td><td>skills / agents / templates / AGENTS.md</td><td>構造テスト（frontmatter、予算、許可コマンド、強制語のタグ、ja/en 対応、必須図）</td><td>全ファイル</td><td>毎 PR</td></tr>
       <tr><td class="k">packaging</td><td><code>scripts/package.mjs</code>、<code>harness/</code></td><td>バイト一致、登録の両方向一致、TOML 往復、dist に不要物なし</td><td>両ハーネス</td><td>毎 PR</td></tr>
@@ -402,7 +402,7 @@ tests/
       <tr><td class="id">TEST-7</td><td>fixture のハーネスイベント JSON は実機から記録し、<code>harness</code> と <code>version</code> を持つ。手で作ったイベントは <code>synthetic: true</code> を付ける。実機 fixture が1つもないイベント種別は契約テストで使えない</td><td>registry テスト（fixture のメタデータ）</td></tr>
       <tr><td class="id">TEST-8</td><td>カバレッジ閾値：lib は行 95% / 分岐 95% / 関数 100%、フックは行 90% / 分岐 85%。閾値未満は CI が落ちる。除外コメント（<code>/* node:coverage ignore */</code>）は使わない</td><td><code>node --test --experimental-test-coverage --test-coverage-lines=... </code>＋ 構造テスト（除外コメントの grep）</td></tr>
       <tr><td class="id">TEST-9</td><td>ミューテーション：<code>hooks/lib/</code> のスコア ≥ 80%（夜間）。下回ったら Issue を自動で開く。lib を変更する PR は、生き残った変異が増えていないことを Brief に書く</td><td>Stryker（夜間）＋ reviewer</td></tr>
-      <tr><td class="id">TEST-10</td><td>契約 → テスト → 実装：バグ修正は再現テストが先に落ちるコミットを含む。新機能は lib の型（JSDoc typedef）とフックの入出力スキーマを先にコミットし、tsc が通ってからテストを書く</td><td>reviewer（git log のコミット順）＋ このリポジトリ自身の v3 フック</td></tr>
+      <tr><td class="id">TEST-10</td><td>契約 → テスト → 実装：バグ修正は再現テストが先に落ちるコミットを含む。新機能は lib の型（JSDoc typedef）とフックの入出力スキーマを先にコミットし、tsc が通ってからテストを書く</td><td>reviewer（git log のコミット順）＋ このリポジトリ自身の Vouch フック</td></tr>
       <tr><td class="id">TEST-11</td><td>1テスト1主張。テスト名は英語の文で「対象 ＋ 条件 → 期待」（例 <code>appendEvent rejects a type missing from the registry</code>）。日本語はコメントに</td><td>reviewer</td></tr>
       <tr><td class="id">TEST-12</td><td>時間：1テスト ≤ 5 s（<code>--test-timeout=5000</code>）、CI の全体 ≤ 90 s（夜間を除く）。再試行（<code>--test-retries</code> や CI の retry）は禁止。不安定なテストは同じ PR で直すか削除する</td><td>CI 設定 ＋ 構造テスト（CI 設定の grep）</td></tr>
       <tr><td class="id">TEST-13</td><td>テストは <code>core/skills/</code> を実行時に読まない（content テストを除く）。必要な内容は fixture にコピーする。テストが他のテストの出力に依存しない</td><td>dependency-cruiser ＋ 構造テスト</td></tr>
@@ -488,7 +488,7 @@ tests/
   <div class="sec-head"><span class="n">07</span><h2>骨格コード</h2></div>
   <div class="prose"><p>ルールが実際にどう見えるかを、フック1本と契約テスト1本で示す。ここに書いた形以外のエントリや起動方法は STR-1 / HOOK-2 / TEST-3 で落ちる。</p></div>
 
-  <h3>フック：<code>core/hooks/aidlc-check-citation.mjs</code></h3>
+  <h3>フック：<code>core/hooks/vouch-check-citation.mjs</code></h3>
 <pre><code>// @ts-check
 import { run } from "./lib/io.mjs";
 import { readArtifact, projectRoot } from "./lib/fs.mjs";
@@ -501,7 +501,7 @@ import { checkCitations } from "./lib/citation.mjs";
  */
 export async function main(input, ctx) {
   const path = input.tool_input?.file_path;
-  if (!path || !/aidlc\/intents\/[^/]+\/(intent|design|review)\.md$/.test(path)) {
+  if (!path || !/vouch\/intents\/[^/]+\/(intent|design|review)\.md$/.test(path)) {
     return { decision: "allow" };                     // 対象外は何もしない（HOOK-2）
   }
   const artifact = await readArtifact(projectRoot(input), path);  // root 配下に解決（HOOK-14）
@@ -516,7 +516,7 @@ export async function main(input, ctx) {
 
 run(main);   // stdin を検証し、例外を捕捉し、events を appendEvent し、exit 0/2 を決める唯一の入口</code></pre>
 
-  <h3>契約テスト：<code>tests/hooks/aidlc-check-citation.test.mjs</code></h3>
+  <h3>契約テスト：<code>tests/hooks/vouch-check-citation.test.mjs</code></h3>
 <pre><code>import { test } from "node:test";
 import assert from "node:assert/strict";
 import { sandbox, runHook, event } from "../helpers/index.mjs";
@@ -524,10 +524,10 @@ import { sandbox, runHook, event } from "../helpers/index.mjs";
 test("check-citation denies an artifact whose ## 参照元 is empty", async (t) => {
   t.plan(3);                                                          // TEST-2
   const sb = await sandbox({ intent: "minimal", clock: "2026-09-27T00:00:00Z" });   // TEST-4/5
-  await sb.write("aidlc/intents/260927-x/intent.md", sb.template("intent", { sources: [] }));
+  await sb.write("vouch/intents/260927-x/intent.md", sb.template("intent", { sources: [] }));
 
-  const r = await runHook("aidlc-check-citation.mjs", event("claude", "PostToolUse", {
-    tool_name: "Write", tool_input: { file_path: sb.path("aidlc/intents/260927-x/intent.md") },
+  const r = await runHook("vouch-check-citation.mjs", event("claude", "PostToolUse", {
+    tool_name: "Write", tool_input: { file_path: sb.path("vouch/intents/260927-x/intent.md") },
   }), { cwd: sb.root });                                               // TEST-3: 子プロセス
 
   assert.equal(r.exitCode, 2);                                         // HOOK-3
@@ -540,9 +540,9 @@ test("check-citation is idempotent for the same input", async (t) => {
   t.plan(1);
   const sb = await sandbox({ intent: "minimal" });
   const ev = event("claude", "PostToolUse", { tool_name: "Write",
-    tool_input: { file_path: sb.path("aidlc/intents/260927-x/review.md") } });
-  await runHook("aidlc-check-citation.mjs", ev, { cwd: sb.root });
-  await runHook("aidlc-check-citation.mjs", ev, { cwd: sb.root });
+    tool_input: { file_path: sb.path("vouch/intents/260927-x/review.md") } });
+  await runHook("vouch-check-citation.mjs", ev, { cwd: sb.root });
+  await runHook("vouch-check-citation.mjs", ev, { cwd: sb.root });
   assert.equal(sb.audit().length, 1);                                  // HOOK-9
 });
 
@@ -550,7 +550,7 @@ test("check-citation ignores malformed stdin and exits 0", async (t) => {
   t.plan(2);
   const sb = await sandbox();
   for (const bad of ["", "not json", "{}", '{"tool_input":{"file_path":"../../etc/passwd"}}']) {
-    const r = await runHook("aidlc-check-citation.mjs", bad, { cwd: sb.root, raw: true });
+    const r = await runHook("vouch-check-citation.mjs", bad, { cwd: sb.root, raw: true });
     if (r.exitCode !== 0) assert.fail(`exit ${r.exitCode} for ${JSON.stringify(bad)}`);
   }
   assert.equal(sb.audit().length, 0);                                  // HOOK-2/14
@@ -561,15 +561,21 @@ test("check-citation ignores malformed stdin and exits 0", async (t) => {
 
 <!-- 8 -->
 <section id="s8">
-  <div class="sec-head"><span class="n">08</span><h2>確認事項</h2></div>
-  <div class="prose"><p>ルール自体は上のとおりで進められる。次の3点だけ、リポジトリの土台に関わるので確認したい。いずれも未回答なら推奨で進める。</p></div>
-  <div class="q"><span class="n">C1</span><div><b>bun から node への全面移行</b>：テストランナーとスクリプトを <code>node --test</code> / npm に切り替える（推奨）。v2 のテスト（<code>tests/</code> の 464 本、bun 前提）は v3 では引き継がず、v2 は LTS ブランチで bun のまま維持する</div></div>
-  <div class="q"><span class="n">C2</span><div><b>フックの言語</b>：plain JavaScript（<code>.mjs</code>）＋ JSDoc ＋ <code>tsc --checkJs --strict</code>（推奨。ビルドなしで配れる）か、TypeScript で書いて配布時にトランスパイルするか（型は書きやすいが、dist が生成物になり利用者がソースを読めなくなる）</div></div>
-  <div class="q"><span class="n">C3</span><div><b>Stryker の採用</b>：夜間のミューテーションテストを最初から入れる（推奨）か、lib が安定してから入れるか</div></div>
-  <div class="ask"><b>次の作業</b>：C1〜C3 の確認後、この文書の内容を実体にする。順番は ① <code>registry/</code> のスキーマと予算 → ② <code>lib/io.mjs</code>・<code>audit.mjs</code>・<code>fs.mjs</code>・<code>clock.mjs</code> と helpers（テスト基盤） → ③ Biome / depcruise / markdownlint / tsc の設定と構造テスト（ルールを先に効かせる） → ④ フックを1本ずつ、契約 → テスト → 実装の順で。</div>
+  <div class="sec-head"><span class="n">08</span><h2>決定と次の作業</h2></div>
+  <div class="prose"><p>リポジトリの土台に関わる3点は、推奨どおりに確定した（2026-09-27）。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>決定</th><th>含意</th></tr></thead>
+    <tbody>
+      <tr><td class="id">C1</td><td>bun から node へ全面移行する。テストは <code>node --test</code>、スクリプトは npm</td><td>AI-DLC v2 のテスト（464 本、bun 前提）は Vouch に引き継がない。v2 は LTS ブランチで bun のまま維持する</td></tr>
+      <tr><td class="id">C2</td><td>フックは plain JavaScript（<code>.mjs</code>）＋ JSDoc ＋ <code>tsc --checkJs --strict</code></td><td>ビルドなしで配れ、利用者がそのままソースを読める。型の厳密さは TS と同等</td></tr>
+      <tr><td class="id">C3</td><td>Stryker を最初から入れる（夜間、lib 対象、スコア ≥ 80%）</td><td>lib が育つ前から「テストが本当に検証しているか」を測る。しきい値未満は Issue を開く</td></tr>
+      <tr><td class="id">C4</td><td>名称は <b>Vouch</b>。コマンド <code>/vouch</code>、ディレクトリ <code>vouch/</code>、フック <code>vouch-*.mjs</code>、リポジトリは新規 <code>vouch-workflows</code> を既定</td><td>AI-DLC v2 と識別子が衝突しないので、同じプロジェクトに v2 と Vouch を並存させて移行できる</td></tr>
+    </tbody>
+  </table></div>
+  <div class="ask"><b>次の作業</b>：この文書の内容を実体にする。順番は ① <code>registry/</code> のスキーマと予算 → ② <code>lib/io.mjs</code>・<code>audit.mjs</code>・<code>fs.mjs</code>・<code>clock.mjs</code> と helpers（テスト基盤） → ③ Biome / depcruise / markdownlint / tsc の設定と構造テスト（ルールを先に効かせる） → ④ フックを1本ずつ、契約 → テスト → 実装の順で。</div>
 </section>
 
-<footer>AI-DLC Workflows v3 実装ルール · 2026-09-27 · 決定記録 rev 3 と未決事項の回答に基づく。</footer>
+<footer>Vouch 実装ルール · 2026-09-27 · 決定記録 rev 3 と未決事項の回答に基づく。</footer>
 </div>
 </body>
 </html>

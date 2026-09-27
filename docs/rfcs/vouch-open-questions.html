@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AI-DLC v3 未決事項の判断依頼</title>
+<title>Vouch 未決事項の判断依頼</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -131,13 +131,13 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 <div class="wrap">
 
 <header class="top">
-  <div class="eyebrow">Decision request · v3 open questions · answered 2026-09-27</div>
-  <h1>AI-DLC v3 未決事項の判断依頼</h1>
-  <p class="lede">決定記録 rev 3 に残った6つの未決事項を、v3 で定めた「判断依頼の形式」（状況 → 選択肢ごとのメリット・デメリット・根拠 → 推奨 → 未回答時の既定）でまとめた。この文書自体が、v3 で人に判断を仰ぐ時の見本になる。</p>
+  <div class="eyebrow">Decision request · Vouch open questions · answered 2026-09-27</div>
+  <h1>Vouch 未決事項の判断依頼</h1>
+  <p class="lede">決定記録 rev 3 に残った6つの未決事項を、Vouch で定めた「判断依頼の形式」（状況 → 選択肢ごとのメリット・デメリット・根拠 → 推奨 → 未回答時の既定）でまとめた。この文書自体が、Vouch で人に判断を仰ぐ時の見本になる。</p>
   <div class="meta">
     <span>更新 <b>2026-09-27</b></span>
     <span>状態 <span class="pill ok">すべて決着（A）</span></span>
-    <span>元文書 <b>v3-decision-record.html §18</b></span>
+    <span>元文書 <b>vouch-decision-record.html §18</b></span>
     <span>根拠の書式 <b>パス:行@コミット / 公式文書#節</b></span>
   </div>
 
@@ -155,7 +155,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       </tbody>
     </table></div>
   </div>
-  <div class="answer"><b>回答（2026-09-27）</b>：Q1: A、Q2: A、Q3: A、Q4: A、Q5: A、Q6: A。すべて推奨案を採用。決定内容は決定記録 rev 3 の §18 に転記した。この文書は根拠と選択肢の記録として残す。</div>
+  <div class="answer"><b>回答（2026-09-27）</b>：Q1: A、Q2: A、Q3: A、Q4: A、Q5: A、Q6: A。すべて推奨案を採用。決定内容は決定記録 rev 3 の §18 に転記した。この文書は根拠と選択肢の記録として残す。同日、ワークフローの名称を v3 から <b>Vouch</b> に改めた。</div>
 </header>
 
 <!-- Q1 -->
@@ -166,34 +166,34 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q1 · 監査イベント台帳と計測フィールド <span>ブロック: する（JSONL スキーマの前提）</span></div>
     <div class="sec"><b>状況</b>
-      <p>v2 の台帳は 91 イベント・22 カテゴリ <span class="src">core/knowledge/aidlc-shared/audit-format.md:26</span>。そのうち Swarm（7）、Worktree（7）、Practices（4）、Merge Dispatch（3）、Sensor（5）、Bolt（4）、Plan Approval / Reviewer Enforcement（3）など、<b>v3 で廃止する機能に属するものが約40種</b>ある。v2 のイベントは Markdown ブロック形式で、所要時間の欄はない（<code>Timestamp</code> と <code>Event</code> をエミッタが書く）<span class="src">audit-format.md:16-22</span>。</p>
-      <p>計測値の取得可能性はハーネスで異なる。Claude Code ではトランスクリプトからトークン使用量を読めるが、Codex では読めない（v2 の使用量フックは Claude 専用で「Kiro / Codex / opencode は producer を持たず no-data に縮退」と明記）<span class="src">core/hooks/aidlc-fold-usage.ts:20-25</span>。フックが受け取れるイベントは両ハーネスとも SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / PreCompact / SubagentStop / Stop <span class="src">harness/claude/settings.json（hooks）</span> <span class="src">harness/codex/emit.ts:35-60</span>。</p>
+      <p>v2 の台帳は 91 イベント・22 カテゴリ <span class="src">core/knowledge/vouch-shared/audit-format.md:26</span>。そのうち Swarm（7）、Worktree（7）、Practices（4）、Merge Dispatch（3）、Sensor（5）、Bolt（4）、Plan Approval / Reviewer Enforcement（3）など、<b>Vouch で廃止する機能に属するものが約40種</b>ある。v2 のイベントは Markdown ブロック形式で、所要時間の欄はない（<code>Timestamp</code> と <code>Event</code> をエミッタが書く）<span class="src">audit-format.md:16-22</span>。</p>
+      <p>計測値の取得可能性はハーネスで異なる。Claude Code ではトランスクリプトからトークン使用量を読めるが、Codex では読めない（v2 の使用量フックは Claude 専用で「Kiro / Codex / opencode は producer を持たず no-data に縮退」と明記）<span class="src">core/hooks/vouch-fold-usage.ts:20-25</span>。フックが受け取れるイベントは両ハーネスとも SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / PreCompact / SubagentStop / Stop <span class="src">harness/claude/settings.json（hooks）</span> <span class="src">harness/codex/emit.ts:35-60</span>。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t">新しい台帳（約25種）＋ 共通計測フィールド。v2 名は対応表で移行</span> <span class="pill accent">推奨</span>
         <div class="pc">
-          <span class="lab plus">メリット</span><span>v3 の4ステージ・確認点・判断依頼・フック検査に対応した名前だけになり、分析の軸（<code>type</code> ＋ <code>check</code> / <code>stage</code> / <code>unit</code>）が単純になる。計測フィールドを最初から全イベントに持てる。台帳が小さいので P-7 の複雑性予算に収まる</span>
+          <span class="lab plus">メリット</span><span>Vouch の4ステージ・確認点・判断依頼・フック検査に対応した名前だけになり、分析の軸（<code>type</code> ＋ <code>check</code> / <code>stage</code> / <code>unit</code>）が単純になる。計測フィールドを最初から全イベントに持てる。台帳が小さいので P-7 の複雑性予算に収まる</span>
           <span class="lab minus">デメリット</span><span>v2 の record を移行する時に名前の変換が要る。対応表にない v2 イベントは <code>legacy.&lt;NAME&gt;</code> として原文のまま残すので、情報は失わないが分析からは外れる</span>
-          <span class="lab ev">根拠</span><span>v2 台帳の廃止対象カテゴリ <span class="src">audit-format.md:26 以降の「Swarm」「Worktree」「Practices」「Merge Dispatch」「Sensor Events」「Construction Bolt Events」</span>／v3 の4ステージと人の接点 <span class="src">v3-decision-record.html §5, §6</span>／JSONL の例 <span class="src">v3-decision-record.html §11</span></span>
+          <span class="lab ev">根拠</span><span>v2 台帳の廃止対象カテゴリ <span class="src">audit-format.md:26 以降の「Swarm」「Worktree」「Practices」「Merge Dispatch」「Sensor Events」「Construction Bolt Events」</span>／Vouch の4ステージと人の接点 <span class="src">vouch-decision-record.html §5, §6</span>／JSONL の例 <span class="src">vouch-decision-record.html §11</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">v2 の 91 種をそのまま継承し、計測フィールドだけ足す</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>移行が 1:1 で済み、v2 に慣れたチームに馴染みがある。t48 のような既存テストの考え方を流用できる</span>
-          <span class="lab minus">デメリット</span><span>約40種は発火する場面が v3 に存在せず、台帳の半分が死んだ名前になる。SUBJECT_PAST_VERB の大文字名は JSON の <code>type</code> としては扱いにくく、<code>check</code> や <code>unit</code> の軸で集計しにくい。P-7（膨張を繰り返さない）に反する</span>
-          <span class="lab ev">根拠</span><span>廃止機能の一覧 <span class="src">v3-decision-record.html §1, §5（吸収する v2 のステージ）</span>／命名規約 <span class="src">audit-format.md:12-14</span></span>
+          <span class="lab minus">デメリット</span><span>約40種は発火する場面が Vouch に存在せず、台帳の半分が死んだ名前になる。SUBJECT_PAST_VERB の大文字名は JSON の <code>type</code> としては扱いにくく、<code>check</code> や <code>unit</code> の軸で集計しにくい。P-7（膨張を繰り返さない）に反する</span>
+          <span class="lab ev">根拠</span><span>廃止機能の一覧 <span class="src">vouch-decision-record.html §1, §5（吸収する v2 のステージ）</span>／命名規約 <span class="src">audit-format.md:12-14</span></span>
         </div>
       </div></div>
-      <div class="opt"><span class="l">C</span><div><span class="t">中間：v2 で生き残る概念は v2 名を保ち、v3 固有のものだけ追加（約35種）</span>
+      <div class="opt"><span class="l">C</span><div><span class="t">中間：v2 で生き残る概念は v2 名を保ち、Vouch 固有のものだけ追加（約35種）</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>STAGE_STARTED / GATE_APPROVED / QUESTION_ANSWERED など主要イベントの名前が変わらず、v2 の分析スクリプトが一部そのまま動く</span>
-          <span class="lab minus">デメリット</span><span>大文字の v2 名と小文字ドット区切りの v3 名が混在し、台帳の一貫性が落ちる。結局 v2 名にも計測フィールドを足すので、A に対して得られるのは名前の互換だけ</span>
+          <span class="lab minus">デメリット</span><span>大文字の v2 名と小文字ドット区切りの Vouch 名が混在し、台帳の一貫性が落ちる。結局 v2 名にも計測フィールドを足すので、A に対して得られるのは名前の互換だけ</span>
           <span class="lab ev">根拠</span><span>v2 主要イベントの一覧 <span class="src">audit-format.md「Stage Lifecycle」「Interaction Events」</span></span>
         </div>
       </div></div>
     </div>
     <div class="sec"><b>推奨と既定</b>
-      <div class="rec"><b>推奨 A。</b>移行 Skill が v2 名 → v3 名の対応表を持ち、対応のない v2 イベントは <code>legacy.&lt;NAME&gt;</code> で原文保存する。<b>未回答時の既定：A。</b>影響範囲：監査ログの JSONL スキーマ、フックの記録処理、移行 Skill、<code>/aidlc report</code>。</div>
+      <div class="rec"><b>推奨 A。</b>移行 Skill が v2 名 → Vouch 名の対応表を持ち、対応のない v2 イベントは <code>legacy.&lt;NAME&gt;</code> で原文保存する。<b>未回答時の既定：A。</b>影響範囲：監査ログの JSONL スキーマ、フックの記録処理、移行 Skill、<code>/vouch report</code>。</div>
     </div>
   </div>
 
@@ -293,28 +293,28 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q2 · 確認点の粒度 <span>ブロック: しない（rules.md の既定値）</span></div>
     <div class="sec"><b>状況</b>
-      <p>v2 は「深さ」で質問量を決めており、Standard で1ステージ 5〜8 問、Comprehensive で 8〜12 問以上を目安にしていた <span class="src">core/aidlc-common/protocols/stage-protocol.md:868-870</span>。v2 の Construction では「質問は例外であって日常ではない」と明記している <span class="src">stage-protocol.md:339</span>。v3 では Intent を1画面に収め、Unit は 5 つ以下を目安に分割する <span class="src">v3-decision-record.html §6「分割の原則」</span>。確認点は監査ログに <code>checkpoint.confirmed</code> として残り、人の中断回数と待ち時間が計測される。</p>
+      <p>v2 は「深さ」で質問量を決めており、Standard で1ステージ 5〜8 問、Comprehensive で 8〜12 問以上を目安にしていた <span class="src">core/vouch-common/protocols/stage-protocol.md:868-870</span>。v2 の Construction では「質問は例外であって日常ではない」と明記している <span class="src">stage-protocol.md:339</span>。Vouch では Intent を1画面に収め、Unit は 5 つ以下を目安に分割する <span class="src">vouch-decision-record.html §6「分割の原則」</span>。確認点は監査ログに <code>checkpoint.confirmed</code> として残り、人の中断回数と待ち時間が計測される。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t">論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層の Intent だけ Unit ごとの確認を自動で追加</span> <span class="pill accent">推奨</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>人が「何を確認しているか」が毎回同じで学習コストがない。1 Intent あたりの中断が 4 回（Design 不要なら 3 回）で、同期の儀式が 30〜60 分に収まる。H だけ細かくなるのでリスクと手間が比例する</span>
           <span class="lab minus">デメリット</span><span>大きな Intent（Unit 5 つ）では「分割・Unit・階層」の確認点が重くなる。ただし Unit 5 つ以下の分割原則があるので上限は決まっている</span>
-          <span class="lab ev">根拠</span><span>分割原則 <span class="src">v3-decision-record.html §6</span>／v2 の質問量の目安 <span class="src">stage-protocol.md:868-870</span>／リスク階層 <span class="src">v3-decision-record.html §9</span></span>
+          <span class="lab ev">根拠</span><span>分割原則 <span class="src">vouch-decision-record.html §6</span>／v2 の質問量の目安 <span class="src">stage-protocol.md:868-870</span>／リスク階層 <span class="src">vouch-decision-record.html §9</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">Unit ごと（AC 確定 1 回 ＋ Unit ごとに Intent 1 回・Design 1 回）</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>Unit の境界と責務を人が1つずつ確認できる。チーム分業（Unit ごとに担当が違う）に合う</span>
           <span class="lab minus">デメリット</span><span>Unit 4 つで 9 回の中断になり、L/M の Intent では過剰。人の待ち時間の割合（目標 20% 未満）を圧迫する</span>
-          <span class="lab ev">根拠</span><span>成功指標「人の待ち時間の割合」<span class="src">v3-decision-record.html §17</span>／v2 の per-unit 反復（unit-major Construction）で Unit ごとの gate が重かった経緯 <span class="src">docs/roadmap.md「2.5.56 Code Generation joins the unit-major Construction walk」</span></span>
+          <span class="lab ev">根拠</span><span>成功指標「人の待ち時間の割合」<span class="src">vouch-decision-record.html §17</span>／v2 の per-unit 反復（unit-major Construction）で Unit ごとの gate が重かった経緯 <span class="src">docs/roadmap.md「2.5.56 Code Generation joins the unit-major Construction walk」</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">C</span><div><span class="t">成果物の節ごと（intent.md / design.md の見出しごとに1回）</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>最も細かく、モデルの理解のずれを早く捕まえられる。教育目的（ワークショップ）には向く</span>
           <span class="lab minus">デメリット</span><span>10〜20 回の中断になり、v2 の「最大約70回の操作」と同じ問題に戻る。人が判断ではなく確認作業に時間を使う</span>
-          <span class="lab ev">根拠</span><span>v2 の操作回数の実測 <span class="src">v3-decision-record.html §1</span></span>
+          <span class="lab ev">根拠</span><span>v2 の操作回数の実測 <span class="src">vouch-decision-record.html §1</span></span>
         </div>
       </div></div>
     </div>
@@ -332,28 +332,28 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q3 · 品質層の必須範囲 <span>ブロック: しない（観点表の既定値）</span></div>
     <div class="sec"><b>状況</b>
-      <p>リスク階層はすでに Design の要否・破壊検査の回数・人が読む範囲を決めている <span class="src">v3-decision-record.html §9</span>。品質層をどの階層で必須にするかを決めないと、reviewer の観点表と Brief の「主張と証拠」の必須行が定まらない。v2 では review_class（advisory / blocking）をコストのダイヤルとして持っていた <span class="src">docs/roadmap.md「reviewer-class cost dial (#718)」</span>。</p>
+      <p>リスク階層はすでに Design の要否・破壊検査の回数・人が読む範囲を決めている <span class="src">vouch-decision-record.html §9</span>。品質層をどの階層で必須にするかを決めないと、reviewer の観点表と Brief の「主張と証拠」の必須行が定まらない。v2 では review_class（advisory / blocking）をコストのダイヤルとして持っていた <span class="src">docs/roadmap.md「reviewer-class cost dial (#718)」</span>。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t">階層で段階化する（下の表）</span> <span class="pill accent">推奨</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>L の Intent は「正しさ・契約・保守性・判断の根拠」の4層だけで済み、Brief をスキムする運用と釣り合う。H は全11層で、人がコードを読む Intent には reviewer の証拠も揃う</span>
           <span class="lab minus">デメリット</span><span>階層の判定を間違えると層が抜ける。ただし階層は人が確認点で承認するので、判定はモデル任せにならない</span>
-          <span class="lab ev">根拠</span><span>階層ごとの人のレビュー範囲 <span class="src">v3-decision-record.html §9</span>／破壊検査の回数 L0 / M1 / H3（決定済み）</span>
+          <span class="lab ev">根拠</span><span>階層ごとの人のレビュー範囲 <span class="src">vouch-decision-record.html §9</span>／破壊検査の回数 L0 / M1 / H3（決定済み）</span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">全 11 層を全階層で必須にする</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>抜けがなく、観点表が常に同じ形。分析で階層間の比較がしやすい</span>
           <span class="lab minus">デメリット</span><span>文言修正の L でも脅威モデル観点表や性能計測を埋めることになり、reviewer の時間と Brief の長さが L でも H 並みになる。「該当なし」が大半を占め、観点表が形骸化する</span>
-          <span class="lab ev">根拠</span><span>L の例（文言・設定・テスト追加）<span class="src">v3-decision-record.html §9</span></span>
+          <span class="lab ev">根拠</span><span>L の例（文言・設定・テスト追加）<span class="src">vouch-decision-record.html §9</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">C</span><div><span class="t">正しさと契約の整合だけ必須、他は任意</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>最も軽い。テストと型検査はフックが自動で証拠を出すので、reviewer の手間がほぼゼロ</span>
-          <span class="lab minus">デメリット</span><span>「テストだけでは足りない」という v3 の品質モデルの前提と矛盾する。根本解決かどうか、設計の整合、セキュリティが H でも任意になる</span>
-          <span class="lab ev">根拠</span><span>品質モデル §7「テストが保証できるのは仕様どおり動くかだけ」<span class="src">v3-decision-record.html §7</span></span>
+          <span class="lab minus">デメリット</span><span>「テストだけでは足りない」という Vouch の品質モデルの前提と矛盾する。根本解決かどうか、設計の整合、セキュリティが H でも任意になる</span>
+          <span class="lab ev">根拠</span><span>品質モデル §7「テストが保証できるのは仕様どおり動くかだけ」<span class="src">vouch-decision-record.html §7</span></span>
         </div>
       </div></div>
     </div>
@@ -390,28 +390,28 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q4 · 必須の図 <span>ブロック: しない（テンプレートの既定値）</span></div>
     <div class="sec"><b>状況</b>
-      <p>図は Markdown 内の Mermaid で書く方針。GitHub は Markdown の <code>```mermaid</code> ブロックをそのまま描画する <span class="src">docs.github.com「Creating diagrams」（Writing on GitHub › Working with advanced formatting）</span>。Mermaid が安定して描けるのは flowchart、sequenceDiagram、classDiagram、erDiagram、stateDiagram-v2 で、C4 図は experimental 扱い <span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>。v2 の設計ステージは Domain / Contract / Functional / NFR / Infra の5つに分かれ、それぞれ文書中心だった <span class="src">core/aidlc-common/stages/construction/*.md</span>。</p>
+      <p>図は Markdown 内の Mermaid で書く方針。GitHub は Markdown の <code>```mermaid</code> ブロックをそのまま描画する <span class="src">docs.github.com「Creating diagrams」（Writing on GitHub › Working with advanced formatting）</span>。Mermaid が安定して描けるのは flowchart、sequenceDiagram、classDiagram、erDiagram、stateDiagram-v2 で、C4 図は experimental 扱い <span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>。v2 の設計ステージは Domain / Contract / Functional / NFR / Infra の5つに分かれ、それぞれ文書中心だった <span class="src">core/vouch-common/stages/construction/*.md</span>。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t">目的別の最小セット（下の表）。Mermaid の安定5種だけを使う</span> <span class="pill accent">推奨</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>各成果物に「必ずある図」が決まるので、読む人が図の場所と意味を覚えられる。GitHub でそのまま描画され、差分は色（<code>classDef</code>）で示せる。C4 の experimental な記法に依存しない</span>
           <span class="lab minus">デメリット</span><span>C4 の container 図のような「システム全体の俯瞰」は flowchart で代用するので、C4 に慣れたチームには物足りない。図の種類が固定なので、UI 中心の変更ではスクリーンショットで補う必要がある</span>
-          <span class="lab ev">根拠</span><span>GitHub の Mermaid 対応 <span class="src">docs.github.com「Creating diagrams」</span>／Mermaid の図の種類 <span class="src">mermaid.js.org「Diagram Syntax」</span>／図解の原則 <span class="src">v3-decision-record.html §14</span></span>
+          <span class="lab ev">根拠</span><span>GitHub の Mermaid 対応 <span class="src">docs.github.com「Creating diagrams」</span>／Mermaid の図の種類 <span class="src">mermaid.js.org「Diagram Syntax」</span>／図解の原則 <span class="src">vouch-decision-record.html §14</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">C4 フルセット（Context / Container / Component / Code）を Design で毎回作る</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>体系が確立していて、アーキテクチャ全体を段階的に俯瞰できる。基準図（知識レイヤー）を C4 で持てば差分図も同じ体系で描ける</span>
-          <span class="lab minus">デメリット</span><span>Mermaid の C4 は experimental で描画が不安定。1 Intent の変更に対して4階層は過剰で、Design が条件付き（必要時のみ）という v3 の方針と合わない。人が読む量が増える</span>
-          <span class="lab ev">根拠</span><span><span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>／Design は条件付き <span class="src">v3-decision-record.html §5</span></span>
+          <span class="lab minus">デメリット</span><span>Mermaid の C4 は experimental で描画が不安定。1 Intent の変更に対して4階層は過剰で、Design が条件付き（必要時のみ）という Vouch の方針と合わない。人が読む量が増える</span>
+          <span class="lab ev">根拠</span><span><span class="src">mermaid.js.org「C4 Diagram (experimental)」</span>／Design は条件付き <span class="src">vouch-decision-record.html §5</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">C</span><div><span class="t">種類は決めず「1変更1図」だけを規定し、図の選択はモデルに任せる</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>最も柔軟で、P-1（判断はモデル）に沿う。変更の性質に最適な図を毎回選べる</span>
           <span class="lab minus">デメリット</span><span>成果物ごとに図の種類が変わり、読む側が毎回「この図は何を示すか」を読み解く必要がある。レビュー負荷軽減の目的（人が構造を覚えて速く読む）に反する</span>
-          <span class="lab ev">根拠</span><span>Review Brief の固定構造の狙い <span class="src">v3-decision-record.html §14</span></span>
+          <span class="lab ev">根拠</span><span>Review Brief の固定構造の狙い <span class="src">vouch-decision-record.html §14</span></span>
         </div>
       </div></div>
     </div>
@@ -482,28 +482,28 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q5 · AI 操作検証の環境 <span>ブロック: しない（Build / Verify Skill の既定）</span></div>
     <div class="sec"><b>状況</b>
-      <p>Claude Code の実行環境では Chromium と Playwright が同梱され、追加インストールなしにブラウザ操作ができる（本セッションの環境でも <code>PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers</code> が設定済み）。Codex はサンドボックス（<code>workspace-write</code>）で <code>.git</code> が読み取り専用になるなど制約があり、headless 実行には <code>writable_roots</code> の設定が要る <span class="src">harness/codex/skills/aidlc/SKILL.md:199</span>。v2 の Build and Test はテスト実行が中心で、AI がアプリを操作する検証は定義していなかった <span class="src">core/aidlc-common/stages/construction/build-and-test.md</span>。証拠の書式は <code>shot:</code> と <code>log:</code> で統一済み <span class="src">v3-decision-record.html §7</span>。</p>
+      <p>Claude Code の実行環境では Chromium と Playwright が同梱され、追加インストールなしにブラウザ操作ができる（本セッションの環境でも <code>PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers</code> が設定済み）。Codex はサンドボックス（<code>workspace-write</code>）で <code>.git</code> が読み取り専用になるなど制約があり、headless 実行には <code>writable_roots</code> の設定が要る <span class="src">harness/codex/skills/vouch/SKILL.md:199</span>。v2 の Build and Test はテスト実行が中心で、AI がアプリを操作する検証は定義していなかった <span class="src">core/vouch-common/stages/construction/build-and-test.md</span>。証拠の書式は <code>shot:</code> と <code>log:</code> で統一済み <span class="src">vouch-decision-record.html §7</span>。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t">ローカル既定。サービス依存があればコンテナを builder が起動。CI は PR で同じ手順を再実行する</span> <span class="pill accent">推奨</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>開発中の往復が最速で、builder が壊れたらその場で直せる。DB などが要る時だけコンテナを使うので普段は軽い。CI で同じ <code>demo.sh</code> を回すので、Brief の証拠が第三者にも再現できる</span>
           <span class="lab minus">デメリット</span><span>3つの環境の差（ポート、環境変数、データ）を <code>knowledge/infra/</code> で管理する必要がある。Codex ではサンドボックス設定を配布物に含める必要がある</span>
-          <span class="lab ev">根拠</span><span>Playwright 同梱の実行環境（本セッションの環境情報）／Codex サンドボックスの制約 <span class="src">harness/codex/skills/aidlc/SKILL.md:199</span>／知識レイヤーのインフラ項目 <span class="src">v3-decision-record.html §12</span></span>
+          <span class="lab ev">根拠</span><span>Playwright 同梱の実行環境（本セッションの環境情報）／Codex サンドボックスの制約 <span class="src">harness/codex/skills/vouch/SKILL.md:199</span>／知識レイヤーのインフラ項目 <span class="src">vouch-decision-record.html §12</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">常にコンテナ（devcontainer / compose）で検証する</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>環境差がなく、証拠の再現性が最も高い。本番に近い構成で探索的検証ができる</span>
           <span class="lab minus">デメリット</span><span>文言修正の L でもコンテナを起動することになり、往復が遅い。プロジェクトに compose 定義がないと使えず、導入の障壁になる</span>
-          <span class="lab ev">根拠</span><span>L 階層の例と分割原則 <span class="src">v3-decision-record.html §6, §9</span></span>
+          <span class="lab ev">根拠</span><span>L 階層の例と分割原則 <span class="src">vouch-decision-record.html §6, §9</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">C</span><div><span class="t">CI だけで検証し、AI はローカルで操作しない</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>ローカルの環境差やサンドボックスの問題を避けられる。証拠が常に CI の artifact に残る</span>
           <span class="lab minus">デメリット</span><span>AI が「操作して壊れた箇所をその場で直す」ループが回らず、検証の優先順位②（AI がアプリを操作）が実質的に消える。探索的検証（未知の未知）は CI の固定手順では見つからない</span>
-          <span class="lab ev">根拠</span><span>検証の優先順位 <span class="src">v3-decision-record.html §8</span>／探索的検証の位置づけ <span class="src">v3-decision-record.html §7「実使用での問題」</span></span>
+          <span class="lab ev">根拠</span><span>検証の優先順位 <span class="src">vouch-decision-record.html §8</span>／探索的検証の位置づけ <span class="src">vouch-decision-record.html §7「実使用での問題」</span></span>
         </div>
       </div></div>
     </div>
@@ -521,14 +521,14 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   <div class="ask">
     <div class="hd">判断依頼 Q6 · 人が読む成果物の言語 <span>ブロック: しない（rules.md の既定値）</span></div>
     <div class="sec"><b>状況</b>
-      <p>v2 には言語設定がなく、成果物は英語で書かれる前提だった <span class="src">core/aidlc-common/protocols/stage-protocol.md（英語のテンプレート）</span>。このチームの決定記録と判断依頼は日本語で運用している。識別子（<code>AC-1</code>、<code>Q-3</code>、<code>D-4</code>、イベント種別、ファイルパス）は言語に関係なく英数字で、監査ログの分析にも使う。</p>
+      <p>v2 には言語設定がなく、成果物は英語で書かれる前提だった <span class="src">core/vouch-common/protocols/stage-protocol.md（英語のテンプレート）</span>。このチームの決定記録と判断依頼は日本語で運用している。識別子（<code>AC-1</code>、<code>Q-3</code>、<code>D-4</code>、イベント種別、ファイルパス）は言語に関係なく英数字で、監査ログの分析にも使う。</p>
     </div>
     <div class="sec"><b>選択肢</b>
       <div class="opt"><span class="l">A</span><div><span class="t"><code>rules.md</code> の <code>language:</code> で選択。既定は日本語。識別子・イベント種別・コミットメッセージの型は英語固定</span> <span class="pill accent">推奨</span>
         <div class="pc">
           <span class="lab plus">メリット</span><span>チームの言語で Brief と判断依頼が読める。英語圏のチームや OSS プロジェクトでも同じ配布物が使える。識別子が英語固定なので、監査ログの分析と grep は言語に依存しない</span>
           <span class="lab minus">デメリット</span><span>テンプレートの見出し（「主張と証拠」など）を言語ごとに持つ必要がある。日本語と英語の2つを最初に用意し、他は後回しになる</span>
-          <span class="lab ev">根拠</span><span>証拠と参照元の書式が英数字 <span class="src">v3-decision-record.html §7</span>／Brief の固定構造 <span class="src">v3-decision-record.html §14</span></span>
+          <span class="lab ev">根拠</span><span>証拠と参照元の書式が英数字 <span class="src">vouch-decision-record.html §7</span>／Brief の固定構造 <span class="src">vouch-decision-record.html §14</span></span>
         </div>
       </div></div>
       <div class="opt"><span class="l">B</span><div><span class="t">日本語固定</span>
@@ -542,7 +542,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         <div class="pc">
           <span class="lab plus">メリット</span><span>コード・コミット・PR と言語が揃い、モデルの出力も安定しやすい。upstream 互換</span>
           <span class="lab minus">デメリット</span><span>このチームの人が Brief を読む速度が落ち、「コードを読まなくても判断できる」というレビュー負荷軽減の目的に反する</span>
-          <span class="lab ev">根拠</span><span>転換③「人は Review Brief を読み、判断だけをする」<span class="src">v3-decision-record.html §3</span></span>
+          <span class="lab ev">根拠</span><span>転換③「人は Review Brief を読み、判断だけをする」<span class="src">vouch-decision-record.html §3</span></span>
         </div>
       </div></div>
     </div>
@@ -552,7 +552,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
   </div>
 </section>
 
-<footer>AI-DLC Workflows v3 未決事項の判断依頼 · 2026-09-27 · 決定記録 rev 3 §18 に対応。根拠は本リポジトリのファイル位置と公式文書の節で示した。</footer>
+<footer>Vouch 未決事項の判断依頼 · 2026-09-27 · 決定記録 rev 3 §18 に対応。根拠は本リポジトリのファイル位置と公式文書の節で示した。</footer>
 </div>
 </body>
 </html>
