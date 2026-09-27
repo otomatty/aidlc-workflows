@@ -172,7 +172,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
     <span>状態 <span class="pill accent">要件整理まで完了</span></span>
   </div>
   <div class="revlog">
-    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する。</p>
+    <p><b>rev 3 で変わったこと</b>（<span class="pill rev3">rev 3</span> が目印）：フックのランタイムは node、縮退モードは実装しない／監査ログは「後で分析するための計測データ」と位置づけ、所要時間などを構造化して記録する／人に判断を仰ぐ時は選択肢ごとにメリット・デメリットと根拠（コード・公式文書）を示す／人のレビューのタイミングを明文化した／人のレビューが最小になるように作業単位を分割する／L 階層の PR も人が Brief をスキムしてマージする（自動マージなし）／未回答の判断依頼は既定案で進めて Brief に明記する／9/27 に未決事項 Q1〜Q6 がすべて決着（§18）。</p>
     <p><b>rev 2</b>（<span class="pill rev">改訂</span>）：監査ログの踏襲／フックの活用／知識の鮮度と参照元／根本解決の最小実装／契約先行／モブ・エラボレーションの統合と確認点／質問数の無制限／脇質問と再開。</p>
   </div>
   <nav class="toc" aria-label="目次">
@@ -475,7 +475,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">モブ・レビュー</td><td>Verify の後</td><td>Review Brief、AI 操作によるデモ、判断依頼（必要な数だけ、根拠つき）</td><td>判断依頼への回答、PR 承認、末尾5分で振り返り</td></tr>
     </tbody>
   </table></div>
-  <p class="note">確認点の粒度（AC グループごと / Unit ごと / 設計セクションごと）は <code>rules.md</code> で設定する。非同期でも回せる：事前読み → 同期で決定 → 事後反映。決定は <code>decisions.md</code> に人の言葉で記録し、監査ログにも残る。H 階層の Unit ではモブ・コンストラクション（AI の構築を同期で見て方向修正）を任意で行う。</p>
+  <p class="note">確認点は既定で論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層は Unit ごとの確認を自動で追加する。粒度は <code>rules.md</code> の <code>checkpoints:</code>（<code>topic</code> / <code>unit</code> / <code>section</code>）で変更できる。非同期でも回せる：事前読み → 同期で決定 → 事後反映。決定は <code>decisions.md</code> に人の言葉で記録し、監査ログにも残る。H 階層の Unit ではモブ・コンストラクション（AI の構築を同期で見て方向修正）を任意で行う。</p>
 
   <h3>いつでもできること</h3>
   <div class="grid2">
@@ -669,7 +669,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
       <tr><td class="k">判断の質と根拠（なぜそう決めたか、何を参照したか）</td><td><span class="chip" style="background:var(--warn)"></span>✗</td><td>決定ログ、代替案の記録、参照元の明記と引用検査（フック）、根拠つき判断依頼</td><td>decisions.md、参照元</td></tr>
     </tbody>
   </table></div>
-  <p class="note">証拠の書式は統一する：<code>test:ファイル › テスト名</code>、<code>log:build-log#L行</code>、<code>shot:画像パス</code>、<code>commit:ハッシュ</code>。参照元と根拠の書式：<code>src/orders.ts:88-104@a1b2c3d</code>、<code>design.md#契約@2026-09-20</code>、<code>rules.md#DoD</code>、<code>https://…（公式文書）#節</code>。</p>
+  <p class="note">どの層をどの階層で必須にするかは §18 の Q3 で決着（L 4層 / M 8層 / H 11層）。証拠の書式は統一する：<code>test:ファイル › テスト名</code>、<code>log:build-log#L行</code>、<code>shot:画像パス</code>、<code>commit:ハッシュ</code>。参照元と根拠の書式：<code>src/orders.ts:88-104@a1b2c3d</code>、<code>design.md#契約@2026-09-20</code>、<code>rules.md#DoD</code>、<code>https://…（公式文書）#節</code>。</p>
 </section>
 
 <!-- 8 -->
@@ -889,7 +889,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
     <div class="card"><h3>形式と原則</h3>
       <ul style="margin-bottom:0">
         <li>Intent ごとに <code>audit/events.jsonl</code>。1行1イベント、append-only。フックだけが書く</li>
-        <li>イベント種別は正典の台帳で管理し、勝手に増やさない（v2 と同じ）。v2 の 91 種から必要最小限に絞り、計測に必要な項目を足す</li>
+        <li>イベント種別は正典の台帳で管理し、勝手に増やさない（v2 と同じ）。台帳は約25種の新しい名前（<code>stage.completed</code>、<code>question.answered</code>、<code>hook.check</code> など）で、v2 名は移行時に対応表で変換し、対応のないものは <code>legacy.&lt;NAME&gt;</code> で原文保存する（§18）</li>
         <li>各イベントに <code>ts</code>、<code>duration_ms</code>、<code>actor</code>（model / hook / human / reviewer）、<code>intent</code>・<code>stage</code>・<code>unit</code>、親イベント、結果、取得できれば <code>tokens</code>（Claude Code は使用量をフックで取れる）を持つ</li>
         <li>人に関わるイベントは「依頼 → 回答」の対で待ち時間が測れる。フックの検査は「開始 → 結果」の対で所要時間が測れる</li>
         <li>v2 の record を移行する時は、audit シャードも同じ台帳に変換して引き継ぐ（§16）</li>
@@ -1072,6 +1072,7 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
         <li><b>差分は色で</b>：基準図（知識レイヤー）に対して追加・変更・削除を色分けする</li>
         <li><b>詳細度は段階化</b>：コンテキスト → コンポーネント → シーケンス → データ／状態の順で、読む人が深さを選ぶ</li>
         <li><b>Mermaid で Markdown 内に置く</b>：GitHub でそのまま見える。設計パックは単一 HTML でも出力する</li>
+        <li><b>必須の図は成果物ごとに固定</b>：基準図＝コンポーネント図、Intent＝ユーザー操作フロー図、Design＝差分コンポーネント図＋シーケンス図、Brief＝主フローのシーケンス図（§18 Q4）</li>
       </ul>
     </div>
     <div class="card"><h3>レビュー負荷を下げる工夫</h3>
@@ -1168,28 +1169,30 @@ footer{padding-top:24px;font-size:13px;color:var(--muted)}
 
 <!-- 18 -->
 <section id="s18">
-  <div class="sec-head"><span class="n">18</span><h2>未決事項と次のステップ</h2></div>
-  <div class="grid2">
-    <div>
-      <h3 style="margin-top:0">次に決めること</h3>
-      <div class="q"><span class="n">Q1</span><div><b>監査イベントの最小集合と計測項目</b>：v2 の 91 種からどれを残し、何を足すか。各イベントに持たせる計測値（所要時間、待ち時間、トークン、回数）</div></div>
-      <div class="q"><span class="n">Q2</span><div><b>確認点の粒度の既定</b>：AC グループごと / Unit ごと / 設計セクションごと</div></div>
-      <div class="q"><span class="n">Q3</span><div>多層品質モデルの各層を、どのリスク階層で必須にするか（例：セキュリティ観点表は H のみ、契約の整合は全階層）</div></div>
-      <div class="q"><span class="n">Q4</span><div>図の標準セット：コンテキスト / コンポーネント / シーケンス / データ / 状態のうち、Intent・Design・Brief でそれぞれ何を必須にするか</div></div>
-      <div class="q"><span class="n">Q5</span><div>AI 操作による検証の環境：ブラウザ操作やアプリ起動をどこで行うか（ローカル、コンテナ、CI）</div></div>
-      <div class="q"><span class="n">Q6</span><div>Brief と判断依頼の言語：日本語固定か、<code>rules.md</code> で選択か</div></div>
-      <p class="note" style="margin-top:12px">決着済み：フックのランタイム（node、縮退モードなし）／L 階層の PR は人が Brief をスキムしてマージ／未回答の判断依頼は既定案で進めて Brief に明記。</p>
-    </div>
-    <div class="card">
-      <h3>進め方</h3>
-      <ol style="margin-bottom:0">
-        <li>未決事項 Q1〜Q6 を決める（Q1 が設計の前提になる。残りは設計中に既定を置いて進められる）</li>
-        <li>設計レベルへ落とし込む：Skill の構成、成果物テンプレート、監査イベント台帳と JSONL スキーマ、フック一覧と予算、知識レイヤーの形式、判断依頼カードの書式、Brief の書式、分割の提案手順、移行の手順</li>
-        <li>Claude Code 向けプロトタイプ：<code>SKILL.md</code>、3エージェント、node フック、Review Brief と判断依頼のテンプレート</li>
-        <li>評価スイートで v2 と比較し、監査ログから人の時間と待ち時間を集計して「判断はモデル、機械的処理はフック」の分担が成り立つか確かめる</li>
-        <li>Codex へ展開し、移行 Skill を整備して v3.0.0</li>
-      </ol>
-    </div>
+  <div class="sec-head"><span class="n">18</span><h2>決着した既定と次のステップ</h2><span class="pill rev3">rev 3</span></div>
+  <div class="prose"><p>未決事項はすべて決着した（2026-09-27、Q1〜Q6 は推奨 A を採用）。各項目の選択肢・根拠・具体案は <a href="v3-open-questions.html">v3-open-questions.html</a> にある。ここでは決まった内容だけを記す。</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>論点</th><th>決定</th><th>反映先</th></tr></thead>
+    <tbody>
+      <tr><td class="k">フックのランタイム</td><td>node。縮退モードは実装しない</td><td>§2, §11, §15</td></tr>
+      <tr><td class="k">L 階層の PR</td><td>人が Brief をスキムしてマージ。自動マージはしない</td><td>§6, §9</td></tr>
+      <tr><td class="k">未回答の判断依頼</td><td>既定案で進めて Brief §7 に明記。止まるのは既定案が作れない時だけ</td><td>§6, §10</td></tr>
+      <tr><td class="k">監査イベント台帳（Q1）</td><td>約25種の新台帳（intent / stage / unit / checkpoint・gate / question / aside / hook / review / knowledge / session / learn・migration）＋ 共通計測フィールド（<code>ts</code>、<code>duration_ms</code>、<code>wait_ms</code>、<code>actor</code>、<code>parent</code>、<code>tokens</code> は Claude Code のみ）。v2 名は対応表で移行し、対応のないものは <code>legacy.&lt;NAME&gt;</code> で原文保存</td><td>§11、移行 §16</td></tr>
+      <tr><td class="k">確認点の粒度（Q2）</td><td>論点ごとの固定4点（AC 確定 → 非ゴールと最小実装の線引き → 分割・Unit・リスク階層 → 設計採択）。H 階層は Unit ごとの確認を自動追加。<code>rules.md</code> の <code>checkpoints: topic | unit | section</code> で変更可、既定 <code>topic</code></td><td>§5, §6</td></tr>
+      <tr><td class="k">品質層 × リスク階層（Q3）</td><td>L は4層必須（正しさ、契約の整合、保守性、判断の根拠）。M は +4層（テスト品質＝破壊検査1、要件の妥当性・網羅、設計の質、根本解決）。H は全11層（+ セキュリティ、非機能、実使用の探索的検証、破壊検査3）。依存監査は DoD として全階層</td><td>§7, §9、reviewer の観点表</td></tr>
+      <tr><td class="k">図の標準セット（Q4）</td><td>Mermaid の安定5種（flowchart / sequenceDiagram / classDiagram / erDiagram / stateDiagram-v2）。基準図＝コンポーネント図（＋ER）、Intent＝ユーザー操作フロー図（＋影響範囲図）、Design＝差分コンポーネント図＋変更フローのシーケンス図（＋データ差分・状態遷移・契約図）、Brief＝主フローのシーケンス図1つ（＋UI は Before/After）。差分の色は3色固定を <code>classDef</code> で同梱</td><td>§12, §14、テンプレート</td></tr>
+      <tr><td class="k">AI 操作検証の環境（Q5）</td><td>ローカル（ハーネス内、Playwright）を既定。サービス依存があれば builder がコンテナ（compose、構成は <code>knowledge/infra/</code>）を起動。CI は PR ごとに同じ <code>demo.sh</code> を再実行する再現の場。Codex はサンドボックス設定を配布物に含める</td><td>§8、Build / Verify Skill</td></tr>
+      <tr><td class="k">言語（Q6）</td><td><code>rules.md</code> の <code>language:</code> で選択、既定 <code>ja</code>。識別子（AC-n、Q-n、D-n）、イベント種別、コミットメッセージの型は英語固定。テンプレートは ja / en の2セット</td><td>§14, §15、テンプレート</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card" style="margin-top:14px">
+    <h3>進め方</h3>
+    <ol style="margin-bottom:0">
+      <li>設計レベルへ落とし込む：Skill の構成、成果物テンプレート（ja / en）、監査イベント台帳と JSONL スキーマ、フック一覧と予算、知識レイヤーの形式、判断依頼カードの書式、Brief の書式、分割の提案手順、移行の手順</li>
+      <li>Claude Code 向けプロトタイプ：<code>SKILL.md</code>、3エージェント、node フック、Review Brief と判断依頼のテンプレート</li>
+      <li>評価スイートで v2 と比較し、監査ログから人の時間と待ち時間を集計して「判断はモデル、機械的処理はフック」の分担が成り立つか確かめる</li>
+      <li>Codex へ展開し、移行 Skill を整備して v3.0.0</li>
+    </ol>
   </div>
 </section>
 
